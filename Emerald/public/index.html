@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Emerald Assistant</title>
+    <link rel="icon" href="favicon.ico" type="image/x-icon" />
+    <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+    <div class="assistant-card">
+        <button id="menuButton" class="menu-button" title="Меню">☰</button>
+        <div class="assistant-avatar" aria-hidden="true">😊</div>
+        <h1>Emerald</h1>
+        <p>Віртуальний помічник Emerald. Напишіть, чим я можу допомогти.</p>
+
+        <div class="chat-window" id="chatWindow">
+            <div class="message assistant">Привіт! Я Emerald, ваш віртуальний помічник. Спробуйте запитати мене про час, дату, розв’язати приклад, підсумувати текст або пояснити термін.</div>
+        </div>
+
+        <div class="controls">
+            <button id="voiceButton" class="voice-button" title="Голосовий чат">🎙️</button>
+            <input id="userInput" type="text" placeholder="Напишіть повідомлення..." />
+            <button id="sendButton">Відправити</button>
+        </div>
+        <div class="voice-settings">
+            <label for="languageSelect">Мова:</label>
+            <select id="languageSelect">
+                <option value="uk-UA">Українська</option>
+                <option value="en-US">English</option>
+            </select>
+            <label for="voiceSelect">Голос Emerald:</label>
+            <select id="voiceSelect"></select>
+        </div>
+        <div class="avatar-settings">
+            <label for="avatarEmojiSelect">Обличчя:</label>
+            <select id="avatarEmojiSelect">
+                <option value="😊">😊</option>
+                <option value="😎">😎</option>
+                <option value="🤖">🤖</option>
+                <option value="🧿">🧿</option>
+                <option value="💚">💚</option>
+            </select>
+            <input id="customEmojiInput" type="text" placeholder="Власне емодзі" maxlength="2" />
+        </div>
+        <div class="background-settings">
+            <label for="backgroundSelect">Фон:</label>
+            <select id="backgroundSelect">
+                <option value="emerald">Emerald</option>
+                <option value="dark">Темний</option>
+                <option value="green-gradient">Зелений градієнт</option>
+                <option value="purple">Глибокий фіолетовий</option>
+                <option value="custom">Власний колір</option>
+            </select>
+            <input id="backgroundColorInput" type="color" value="#081d13" />
+        </div>
+    <div class="card-settings">
+            <label for="cardColorInput">Колір картки:</label>
+            <input id="cardColorInput" type="color" value="#ffffff" />
+        </div>
+    </div>
+
+    <div id="menuOverlay" class="menu-overlay hidden">
+        <div class="menu-panel">
+            <div class="menu-header">
+                <h2>📬 E-пошта</h2>
+                <button id="closeMenuButton" class="close-menu-button" title="Закрити меню">✕</button>
+            </div>
+            <div class="email-app">
+                <div class="email-toolbar">
+                    <button id="composeButton" class="email-btn compose-btn">✉️ Написати</button>
+                </div>
+                <div class="email-list" id="emailList"></div>
+                <div class="email-view" id="emailView">
+                    <div class="email-view-placeholder">Оберіть листа щоб прочитати</div>
+                </div>
+                <div class="compose-area hidden" id="composeArea">
+                    <input id="composeTo" type="text" placeholder="Кому:" />
+                    <input id="composeSubject" type="text" placeholder="Тема:" />
+                    <textarea id="composeBody" placeholder="Текст повідомлення..."></textarea>
+                    <button id="sendEmailButton" class="email-btn send-btn">📤 Надіслати</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

@@ -1,0 +1,26 @@
+# Залежності
+node_modules/
+node/
+
+# Збірка Electron
+dist/
+build.bat
+
+# Файли середовища та конфігурації
+.env
+.env.local
+
+# Логи
+*.log
+
+# Системні файли
+.DS_Store
+desktop.ini
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+
+# Дані додатку (створюються під час роботи)
+emails.json

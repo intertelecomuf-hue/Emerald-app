@@ -1,0 +1,1165 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Emerald Pay (ePay)</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #0a1628 0%, #1a2a4a 100%);
+            color: #e0e0e0;
+            min-height: 100vh;
+        }
+        .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+        
+        /* Header */
+        header {
+            background: rgba(255,255,255,0.05);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            padding: 15px 0;
+        }
+        header .container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .logo {
+            font-size: 24px;
+            font-weight: bold;
+            color: #00e676;
+        }
+        .logo span { color: #69f0ae; }
+        .nav-buttons { display: flex; gap: 10px; }
+        
+        /* Cards */
+        .card {
+            background: rgba(255,255,255,0.08);
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 20px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        .card h2 { color: #69f0ae; margin-bottom: 16px; }
+        
+        /* Forms */
+        input, select, textarea {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 12px;
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 8px;
+            color: #fff;
+            font-size: 14px;
+        }
+        input:focus { outline: none; border-color: #00e676; }
+        input::placeholder { color: rgba(255,255,255,0.4); }
+        
+        /* Buttons */
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+        .btn-primary {
+            background: #00e676;
+            color: #0a1628;
+        }
+        .btn-primary:hover { background: #69f0ae; transform: translateY(-1px); }
+        .btn-secondary {
+            background: rgba(255,255,255,0.1);
+            color: #e0e0e0;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        .btn-secondary:hover { background: rgba(255,255,255,0.2); }
+        .btn-danger {
+            background: #ff5252;
+            color: #fff;
+        }
+        .btn-sm { padding: 6px 12px; font-size: 12px; }
+        
+        /* Tables */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        th { color: #69f0ae; font-weight: 600; }
+        
+        /* Status badges */
+        .badge {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .badge-pending { background: #ffd740; color: #333; }
+        .badge-completed { background: #00e676; color: #0a1628; }
+        .badge-failed { background: #ff5252; color: #fff; }
+        .badge-refunded { background: #448aff; color: #fff; }
+        
+        /* Auth forms */
+        .auth-container {
+            max-width: 400px;
+            margin: 60px auto;
+        }
+        .auth-container .card { text-align: center; }
+        .auth-container .btn { width: 100%; margin-top: 10px; }
+        .auth-link {
+            color: #69f0ae;
+            cursor: pointer;
+            margin-top: 12px;
+            display: inline-block;
+        }
+        .auth-link:hover { text-decoration: underline; }
+        
+        /* Dashboard */
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        .stat-card {
+            background: rgba(255,255,255,0.08);
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        .stat-card .value {
+            font-size: 32px;
+            font-weight: bold;
+            color: #69f0ae;
+        }
+        .stat-card .label {
+            font-size: 14px;
+            color: rgba(255,255,255,0.6);
+            margin-top: 4px;
+        }
+        
+        /* Hidden */
+        .hidden { display: none !important; }
+        
+        /* Error/Success messages */
+        .message {
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 12px;
+            display: none;
+        }
+        .message.error { background: rgba(255,82,82,0.2); border: 1px solid #ff5252; display: block; }
+        .message.success { background: rgba(0,230,118,0.2); border: 1px solid #00e676; display: block; }
+        
+        /* Tabs */
+        .tabs {
+            display: flex;
+            gap: 4px;
+            margin-bottom: 20px;
+        }
+        .tab {
+            padding: 10px 20px;
+            cursor: pointer;
+            border-radius: 8px 8px 0 0;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-bottom: none;
+            color: rgba(255,255,255,0.6);
+        }
+        .tab.active {
+            background: rgba(255,255,255,0.08);
+            color: #69f0ae;
+            border-color: #69f0ae;
+        }
+        
+        /* Virtual Card Styles */
+        .virtual-card {
+            background: linear-gradient(135deg, #1a3a5c 0%, #0d2137 100%);
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 16px;
+            border: 1px solid rgba(255,255,255,0.15);
+            position: relative;
+            overflow: hidden;
+            min-height: 200px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+        .virtual-card::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -20%;
+            width: 200px;
+            height: 200px;
+            background: radial-gradient(circle, rgba(0,230,118,0.1) 0%, transparent 70%);
+            border-radius: 50%;
+        }
+        .virtual-card .card-brand {
+            font-size: 14px;
+            color: rgba(255,255,255,0.6);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+        .virtual-card .card-number {
+            font-size: 22px;
+            font-family: 'Courier New', monospace;
+            letter-spacing: 3px;
+            color: #fff;
+            margin: 16px 0;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+        }
+        .virtual-card .card-details {
+            display: flex;
+            gap: 24px;
+            font-size: 12px;
+            color: rgba(255,255,255,0.7);
+        }
+        .virtual-card .card-details span {
+            display: block;
+            font-size: 14px;
+            color: #fff;
+            font-family: 'Courier New', monospace;
+            margin-top: 2px;
+        }
+        .virtual-card .card-balance {
+            font-size: 28px;
+            font-weight: bold;
+            color: #69f0ae;
+        }
+        .virtual-card .card-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 12px;
+        }
+        .virtual-card .card-chip {
+            width: 40px;
+            height: 30px;
+            background: linear-gradient(135deg, #ffd740, #ffab00);
+            border-radius: 4px;
+            margin-bottom: 8px;
+        }
+        .virtual-card.frozen {
+            opacity: 0.7;
+        }
+        .virtual-card.frozen::after {
+            content: '❄️ ЗАМОРОЖЕНО';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(-15deg);
+            font-size: 24px;
+            font-weight: bold;
+            color: rgba(255,255,255,0.3);
+            border: 3px solid rgba(255,255,255,0.3);
+            padding: 8px 16px;
+            border-radius: 8px;
+            pointer-events: none;
+        }
+        .virtual-card.inactive {
+            opacity: 0.5;
+        }
+        .virtual-card.inactive::after {
+            content: '🔴 НЕАКТИВНА';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(-15deg);
+            font-size: 24px;
+            font-weight: bold;
+            color: rgba(255,82,82,0.5);
+            border: 3px solid rgba(255,82,82,0.5);
+            padding: 8px 16px;
+            border-radius: 8px;
+            pointer-events: none;
+        }
+
+        /* Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+        .modal {
+            background: #1a2a4a;
+            border-radius: 12px;
+            padding: 24px;
+            max-width: 500px;
+            width: 90%;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        .modal h2 { margin-bottom: 16px; }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <div class="logo">💎 <span>Emerald</span> Pay</div>
+            <div class="nav-buttons" id="navButtons">
+                <button class="btn btn-secondary" onclick="showAuth('login')">Увійти</button>
+                <button class="btn btn-primary" onclick="showAuth('register')">Реєстрація</button>
+            </div>
+        </div>
+    </header>
+
+    <div class="container">
+        <!-- Auth Section -->
+        <div id="authSection" class="auth-container">
+            <div class="card" id="loginForm">
+                <h2>З поверненням</h2>
+                <div id="loginMessage" class="message"></div>
+                <input type="email" id="loginEmail" placeholder="Електронна пошта" required>
+                <input type="password" id="loginPassword" placeholder="Пароль" required>
+                <button class="btn btn-primary" onclick="login()">Увійти</button>
+                <div class="auth-link" onclick="showAuth('register')">Немає акаунта? Зареєструватися</div>
+            </div>
+            <div class="card hidden" id="registerForm">
+                <h2>Створити акаунт</h2>
+                <div id="registerMessage" class="message"></div>
+                <input type="text" id="regName" placeholder="Повне ім'я">
+                <input type="email" id="regEmail" placeholder="Електронна пошта" required>
+                <input type="password" id="regPassword" placeholder="Пароль" required>
+                <button class="btn btn-primary" onclick="register()">Створити акаунт</button>
+                <div class="auth-link" onclick="showAuth('login')">Вже маєте акаунт? Увійти</div>
+            </div>
+        </div>
+
+        <!-- Dashboard Section -->
+        <div id="dashboardSection" class="hidden">
+            <div class="stats">
+                <div class="stat-card">
+                    <div class="value" id="userBalance">$0.00</div>
+                    <div class="label">Основний баланс</div>
+                </div>
+                <div class="stat-card">
+                    <div class="value" id="totalPayments">0</div>
+                    <div class="label">Всього платежів</div>
+                </div>
+                <div class="stat-card">
+                    <div class="value" id="completedPayments">0</div>
+                    <div class="label">Завершено</div>
+                </div>
+                <div class="stat-card">
+                    <div class="value" id="pendingPayments">0</div>
+                    <div class="label">Очікується</div>
+                </div>
+            </div>
+
+            <div class="tabs">
+                <div class="tab active" onclick="switchTab('payments', this)">Мої платежі</div>
+                <div class="tab" onclick="switchTab('create', this)">Новий платіж</div>
+                <div class="tab" onclick="switchTab('cards', this)">Мої картки</div>
+                <div class="tab" onclick="switchTab('transactions', this)">Транзакції</div>
+                <div class="tab hidden" id="adminTab" onclick="switchTab('admin', this)">Адмін</div>
+            </div>
+
+            <!-- Payments List -->
+            <div id="paymentsTab" class="card">
+                <h2>Історія платежів</h2>
+                <div id="paymentsMessage" class="message"></div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Сума</th>
+                            <th>Валюта</th>
+                            <th>Статус</th>
+                            <th>Опис</th>
+                            <th>Дата</th>
+                        </tr>
+                    </thead>
+                    <tbody id="paymentsTableBody">
+                        <tr><td colspan="6" style="text-align:center;color:rgba(255,255,255,0.4);">Ще немає платежів</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Create Payment -->
+            <div id="createTab" class="card hidden">
+                <h2>Створити новий платіж</h2>
+                <div id="createMessage" class="message"></div>
+                <input type="number" id="paymentAmount" placeholder="Сума" step="0.01" min="0.01" required>
+                <select id="paymentCurrency">
+                    <option value="USD">USD - Долар США</option>
+                    <option value="EUR">EUR - Євро</option>
+                    <option value="UAH">UAH - Українська гривня</option>
+                </select>
+                <textarea id="paymentDescription" placeholder="Опис (необов'язково)" rows="3"></textarea>
+                <button class="btn btn-primary" onclick="createPayment()">Створити платіж</button>
+            </div>
+
+            <!-- Cards Section -->
+            <div id="cardsTab" class="card hidden">
+                <h2>Мої картки</h2>
+                <div id="cardsMessage" class="message"></div>
+                
+                <div style="display:flex;gap:12px;margin-bottom:16px;flex-wrap:wrap;">
+                    <button class="btn btn-primary" onclick="showCreateCard()">+ Створити картку</button>
+                </div>
+
+                <div id="cardsList"></div>
+            </div>
+
+            <!-- Transactions Section -->
+            <div id="transactionsTab" class="card hidden">
+                <h2>Управління балансом</h2>
+                <div id="transactionsMessage" class="message"></div>
+                
+                <div style="display:flex;gap:12px;margin-bottom:20px;flex-wrap:wrap;">
+                    <button class="btn btn-primary" onclick="showDeposit()">💰 Поповнити баланс</button>
+                    <button class="btn btn-primary" onclick="showSalary()">💼 Зарплата</button>
+                    <button class="btn btn-secondary" onclick="showTransferToCard()">💳 На картку</button>
+                </div>
+
+                <h3 style="color:#69f0ae;margin-bottom:12px;">Історія транзакцій</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Тип</th>
+                            <th>Сума</th>
+                            <th>Валюта</th>
+                            <th>Статус</th>
+                            <th>Опис</th>
+                            <th>Дата</th>
+                        </tr>
+                    </thead>
+                    <tbody id="transactionsTableBody">
+                        <tr><td colspan="6" style="text-align:center;color:rgba(255,255,255,0.4);">Завантаження...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Admin Panel -->
+            <div id="adminTab" class="card hidden">
+                <h2>Панель адміністратора</h2>
+                <div id="adminMessage" class="message"></div>
+                <h3 style="color:#69f0ae;margin-bottom:12px;">Всі платежі</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Користувач</th>
+                            <th>Сума</th>
+                            <th>Статус</th>
+                            <th>Дії</th>
+                        </tr>
+                    </thead>
+                    <tbody id="adminPaymentsBody">
+                        <tr><td colspan="5" style="text-align:center;color:rgba(255,255,255,0.4);">Завантаження...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:8000/api';
+        let token = localStorage.getItem('epay_token');
+        let currentUser = null;
+
+        // Initialize
+        if (token) {
+            loadDashboard();
+        }
+
+        // Auth functions
+        function showAuth(form) {
+            document.getElementById('loginForm').classList.toggle('hidden', form !== 'login');
+            document.getElementById('registerForm').classList.toggle('hidden', form !== 'register');
+        }
+
+        async function login() {
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+            const msg = document.getElementById('loginMessage');
+            
+            try {
+                const res = await fetch(`${API_URL}/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
+                const data = await res.json();
+                
+                if (!res.ok) {
+                    msg.className = 'message error';
+                    msg.textContent = data.detail || 'Помилка входу';
+                    return;
+                }
+                
+                token = data.access_token;
+                currentUser = data.user;
+                localStorage.setItem('epay_token', token);
+                loadDashboard();
+            } catch (err) {
+                msg.className = 'message error';
+                msg.textContent = 'Помилка з\'єднання';
+            }
+        }
+
+        async function register() {
+            const email = document.getElementById('regEmail').value;
+            const password = document.getElementById('regPassword').value;
+            const fullName = document.getElementById('regName').value;
+            const msg = document.getElementById('registerMessage');
+            
+            try {
+                const res = await fetch(`${API_URL}/auth/register`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password, full_name: fullName || null })
+                });
+                const data = await res.json();
+                
+                if (!res.ok) {
+                    msg.className = 'message error';
+                    msg.textContent = data.detail || 'Помилка реєстрації';
+                    return;
+                }
+                
+                token = data.access_token;
+                currentUser = data.user;
+                localStorage.setItem('epay_token', token);
+                loadDashboard();
+            } catch (err) {
+                msg.className = 'message error';
+                msg.textContent = 'Помилка з\'єднання';
+            }
+        }
+
+        function logout() {
+            token = null;
+            currentUser = null;
+            localStorage.removeItem('epay_token');
+            document.getElementById('authSection').classList.remove('hidden');
+            document.getElementById('dashboardSection').classList.add('hidden');
+            document.getElementById('navButtons').innerHTML = `
+                <button class="btn btn-secondary" onclick="showAuth('login')">Увійти</button>
+                <button class="btn btn-primary" onclick="showAuth('register')">Реєстрація</button>
+            `;
+        }
+
+        // Dashboard
+        async function loadDashboard() {
+            try {
+                const res = await fetch(`${API_URL}/auth/me`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (!res.ok) { logout(); return; }
+                currentUser = await res.json();
+            } catch (err) { logout(); return; }
+
+            document.getElementById('authSection').classList.add('hidden');
+            document.getElementById('dashboardSection').classList.remove('hidden');
+            document.getElementById('navButtons').innerHTML = `
+                <span style="color:#69f0ae;margin-right:10px;">${currentUser.email}</span>
+                <button class="btn btn-secondary btn-sm" onclick="logout()">Вийти</button>
+            `;
+
+            // Show admin tab if admin
+            if (currentUser.is_admin) {
+                document.getElementById('adminTab').classList.remove('hidden');
+            }
+
+            loadPayments();
+        }
+
+        async function loadPayments() {
+            try {
+                const res = await fetch(`${API_URL}/payments`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const payments = await res.json();
+                
+                const tbody = document.getElementById('paymentsTableBody');
+                if (payments.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:rgba(255,255,255,0.4);">Ще немає платежів</td></tr>';
+                } else {
+                    tbody.innerHTML = payments.map(p => `
+                        <tr>
+                            <td style="font-size:12px;font-family:monospace;">${p.id.slice(0,8)}...</td>
+                            <td>${p.amount}</td>
+                            <td>${p.currency}</td>
+                            <td><span class="badge badge-${p.status}">${p.status}</span></td>
+                            <td>${p.description || '-'}</td>
+                            <td>${new Date(p.created_at).toLocaleDateString()}</td>
+                        </tr>
+                    `).join('');
+                }
+
+                // Stats
+                document.getElementById('totalPayments').textContent = payments.length;
+                document.getElementById('completedPayments').textContent = payments.filter(p => p.status === 'completed').length;
+                document.getElementById('pendingPayments').textContent = payments.filter(p => p.status === 'pending').length;
+
+                // Load admin data if admin
+                if (currentUser.is_admin) loadAdminData();
+            } catch (err) {
+                document.getElementById('paymentsMessage').className = 'message error';
+                document.getElementById('paymentsMessage').textContent = 'Не вдалося завантажити платежі';
+            }
+        }
+
+        async function createPayment() {
+            const amount = parseFloat(document.getElementById('paymentAmount').value);
+            const currency = document.getElementById('paymentCurrency').value;
+            const description = document.getElementById('paymentDescription').value;
+            const msg = document.getElementById('createMessage');
+
+            if (!amount || amount <= 0) {
+                msg.className = 'message error';
+                msg.textContent = 'Будь ласка, введіть коректну суму';
+                return;
+            }
+
+            try {
+                const res = await fetch(`${API_URL}/payments/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ amount, currency, description: description || null })
+                });
+                const data = await res.json();
+
+                if (!res.ok) {
+                    msg.className = 'message error';
+                    msg.textContent = data.detail || 'Не вдалося створити платіж';
+                    return;
+                }
+
+                msg.className = 'message success';
+                msg.textContent = `Платіж створено! ID: ${data.id.slice(0,8)}... Статус: ${data.status}`;
+                
+                // Reset form
+                document.getElementById('paymentAmount').value = '';
+                document.getElementById('paymentDescription').value = '';
+                
+                // Reload payments
+                loadPayments();
+                switchTab('payments', document.querySelector('.tab'));
+            } catch (err) {
+                msg.className = 'message error';
+                msg.textContent = 'Помилка з\'єднання';
+            }
+        }
+
+        // Admin functions
+        async function loadAdminData() {
+            try {
+                const res = await fetch(`${API_URL}/admin/payments`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const payments = await res.json();
+                
+                const tbody = document.getElementById('adminPaymentsBody');
+                if (payments.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:rgba(255,255,255,0.4);">Немає платежів</td></tr>';
+                } else {
+                    tbody.innerHTML = payments.map(p => `
+                        <tr>
+                            <td style="font-size:12px;font-family:monospace;">${p.id.slice(0,8)}...</td>
+                            <td style="font-size:12px;font-family:monospace;">${p.user_id.slice(0,8)}...</td>
+                            <td>${p.amount} ${p.currency}</td>
+                            <td><span class="badge badge-${p.status}">${p.status}</span></td>
+                            <td>
+                                <select onchange="updatePaymentStatus('${p.id}', this.value)" style="width:auto;padding:4px;margin:0;">
+                                    <option value="pending" ${p.status === 'pending' ? 'selected' : ''}>Очікується</option>
+                                    <option value="completed" ${p.status === 'completed' ? 'selected' : ''}>Завершено</option>
+                                    <option value="failed" ${p.status === 'failed' ? 'selected' : ''}>Помилка</option>
+                                    <option value="refunded" ${p.status === 'refunded' ? 'selected' : ''}>Повернено</option>
+                                </select>
+                            </td>
+                        </tr>
+                    `).join('');
+                }
+            } catch (err) {
+                document.getElementById('adminMessage').className = 'message error';
+                document.getElementById('adminMessage').textContent = 'Не вдалося завантажити дані адміністратора';
+            }
+        }
+
+        async function updatePaymentStatus(paymentId, status) {
+            try {
+                const res = await fetch(`${API_URL}/admin/payments/${paymentId}/status?status=${status}`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await res.json();
+                
+                if (res.ok) {
+                    loadAdminData();
+                    loadPayments();
+                }
+            } catch (err) {}
+        }
+
+        // ========== CARDS ==========
+        async function loadCards() {
+            const msg = document.getElementById('cardsMessage');
+            try {
+                const res = await fetch(`${API_URL}/cards/`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const cards = await res.json();
+                
+                const container = document.getElementById('cardsList');
+                if (cards.length === 0) {
+                    container.innerHTML = `
+                        <div style="text-align:center;padding:40px;color:rgba(255,255,255,0.4);">
+                            <div style="font-size:48px;margin-bottom:16px;">💳</div>
+                            <p>У вас ще немає карток</p>
+                            <p style="margin-top:8px;font-size:14px;">Створіть віртуальну картку, щоб почати</p>
+                        </div>
+                    `;
+                } else {
+                    container.innerHTML = cards.map(c => renderCard(c)).join('');
+                }
+                msg.className = 'message';
+                msg.style.display = 'none';
+            } catch (err) {
+                msg.className = 'message error';
+                msg.textContent = 'Не вдалося завантажити картки';
+            }
+        }
+
+        function renderCard(c) {
+            const statusClass = c.is_frozen ? 'frozen' : (c.is_active ? '' : 'inactive');
+            const expiryStr = `${String(c.expiry_month).padStart(2,'0')}/${c.expiry_year}`;
+            const brandLogo = c.brand === 'Mastercard' ? '💳' : '💚';
+            
+            return `
+                <div class="virtual-card ${statusClass}">
+                    <div>
+                        <div class="card-chip"></div>
+                        <div class="card-brand">${brandLogo} ${c.brand}</div>
+                        <div class="card-number">${c.card_number}</div>
+                        <div class="card-details">
+                            <div>Власник<span>${c.cardholder_name}</span></div>
+                            <div>Термін дії<span>${expiryStr}</span></div>
+                            <div>CVV<span>${c.cvv}</span></div>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="card-balance">${c.balance} ${c.currency}</div>
+                        <div class="card-actions">
+                            <button class="btn btn-primary btn-sm" onclick="showTopUp('${c.id}')">💰 Поповнити</button>
+                            <button class="btn btn-secondary btn-sm" onclick="toggleFreeze('${c.id}')">
+                                ${c.is_frozen ? '🔓 Розморозити' : '❄️ Заморозити'}
+                            </button>
+                            ${c.is_active ? `<button class="btn btn-danger btn-sm" onclick="deactivateCard('${c.id}')">🗑️ Видалити</button>` : ''}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function showCreateCard() {
+            const modal = document.createElement('div');
+            modal.className = 'modal-overlay';
+            modal.id = 'createCardModal';
+            modal.innerHTML = `
+                <div class="modal">
+                    <h2>💳 Створити віртуальну картку</h2>
+                    <div id="createCardMsg" class="message"></div>
+                    <select id="newCardBrand">
+                        <option value="Visa">Visa</option>
+                        <option value="Mastercard">Mastercard</option>
+                    </select>
+                    <select id="newCardCurrency">
+                        <option value="USD">USD - Долар США</option>
+                        <option value="EUR">EUR - Євро</option>
+                        <option value="UAH">UAH - Українська гривня</option>
+                    </select>
+                    <div style="display:flex;gap:8px;margin-top:12px;">
+                        <button class="btn btn-primary" onclick="createCard()" style="flex:1;">Створити</button>
+                        <button class="btn btn-secondary" onclick="closeModal('createCardModal')">Скасувати</button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+        }
+
+        async function createCard() {
+            const brand = document.getElementById('newCardBrand').value;
+            const currency = document.getElementById('newCardCurrency').value;
+            const msg = document.getElementById('createCardMsg');
+
+            try {
+                const res = await fetch(`${API_URL}/cards/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ brand, currency })
+                });
+                const data = await res.json();
+
+                if (!res.ok) {
+                    msg.className = 'message error';
+                    msg.textContent = data.detail || 'Не вдалося створити картку';
+                    return;
+                }
+
+                closeModal('createCardModal');
+                loadCards();
+            } catch (err) {
+                msg.className = 'message error';
+                msg.textContent = 'Помилка з\'єднання';
+            }
+        }
+
+        function showTopUp(cardId) {
+            const modal = document.createElement('div');
+            modal.className = 'modal-overlay';
+            modal.id = 'topUpModal';
+            modal.innerHTML = `
+                <div class="modal">
+                    <h2>💰 Поповнити картку</h2>
+                    <div id="topUpMsg" class="message"></div>
+                    <input type="number" id="topUpAmount" placeholder="Сума поповнення" step="0.01" min="0.01" required>
+                    <div style="display:flex;gap:8px;margin-top:12px;">
+                        <button class="btn btn-primary" onclick="topUpCard('${cardId}')" style="flex:1;">Поповнити</button>
+                        <button class="btn btn-secondary" onclick="closeModal('topUpModal')">Скасувати</button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+        }
+
+        async function topUpCard(cardId) {
+            const amount = parseFloat(document.getElementById('topUpAmount').value);
+            const msg = document.getElementById('topUpMsg');
+
+            if (!amount || amount <= 0) {
+                msg.className = 'message error';
+                msg.textContent = 'Введіть коректну суму';
+                return;
+            }
+
+            try {
+                const res = await fetch(`${API_URL}/cards/${cardId}/topup`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ amount })
+                });
+                const data = await res.json();
+
+                if (!res.ok) {
+                    msg.className = 'message error';
+                    msg.textContent = data.detail || 'Не вдалося поповнити картку';
+                    return;
+                }
+
+                closeModal('topUpModal');
+                loadCards();
+            } catch (err) {
+                msg.className = 'message error';
+                msg.textContent = 'Помилка з\'єднання';
+            }
+        }
+
+        async function toggleFreeze(cardId) {
+            try {
+                const res = await fetch(`${API_URL}/cards/${cardId}/freeze`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (res.ok) loadCards();
+            } catch (err) {}
+        }
+
+        async function deactivateCard(cardId) {
+            if (!confirm('Ви впевнені, що хочете видалити цю картку?')) return;
+            try {
+                const res = await fetch(`${API_URL}/cards/${cardId}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (res.ok) loadCards();
+            } catch (err) {}
+        }
+
+        function closeModal(id) {
+            const modal = document.getElementById(id);
+            if (modal) modal.remove();
+        }
+
+        // ========== TRANSACTIONS / BALANCE ==========
+        async function loadTransactions() {
+            const msg = document.getElementById('transactionsMessage');
+            try {
+                // Update balance display
+                const meRes = await fetch(`${API_URL}/auth/me`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const userData = await meRes.json();
+                document.getElementById('userBalance').textContent = `$${parseFloat(userData.balance).toFixed(2)}`;
+
+                // Load transactions
+                const res = await fetch(`${API_URL}/transactions/`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const transactions = await res.json();
+                
+                const tbody = document.getElementById('transactionsTableBody');
+                if (transactions.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:rgba(255,255,255,0.4);">Ще немає транзакцій</td></tr>';
+                } else {
+                    const typeLabels = {
+                        'deposit': '💰 Поповнення',
+                        'salary': '💼 Зарплата',
+                        'transfer_to_card': '💳 На картку',
+                        'transfer_from_card': '💳 З картки',
+                        'payment': '💸 Платіж'
+                    };
+                    tbody.innerHTML = transactions.map(t => `
+                        <tr>
+                            <td>${typeLabels[t.type] || t.type}</td>
+                            <td style="color: ${['deposit','salary'].includes(t.type) ? '#69f0ae' : '#ff5252'}; font-weight: bold;">
+                                ${['deposit','salary'].includes(t.type) ? '+' : '-'}$${parseFloat(t.amount).toFixed(2)}
+                            </td>
+                            <td>${t.currency}</td>
+                            <td><span class="badge badge-${t.status}">${t.status}</span></td>
+                            <td>${t.description || '-'}</td>
+                            <td>${new Date(t.created_at).toLocaleString()}</td>
+                        </tr>
+                    `).join('');
+                }
+                msg.className = 'message';
+                msg.style.display = 'none';
+            } catch (err) {
+                msg.className = 'message error';
+                msg.textContent = 'Не вдалося завантажити транзакції';
+            }
+        }
+
+        function showDeposit() {
+            const modal = document.createElement('div');
+            modal.className = 'modal-overlay';
+            modal.id = 'depositModal';
+            modal.innerHTML = `
+                <div class="modal">
+                    <h2>💰 Поповнити баланс</h2>
+                    <div id="depositMsg" class="message"></div>
+                    <input type="number" id="depositAmount" placeholder="Сума поповнення" step="0.01" min="0.01" required>
+                    <input type="text" id="depositDescription" placeholder="Опис (необов'язково)">
+                    <div style="display:flex;gap:8px;margin-top:12px;">
+                        <button class="btn btn-primary" onclick="doDeposit()" style="flex:1;">Поповнити</button>
+                        <button class="btn btn-secondary" onclick="closeModal('depositModal')">Скасувати</button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+        }
+
+        async function doDeposit() {
+            const amount = parseFloat(document.getElementById('depositAmount').value);
+            const description = document.getElementById('depositDescription').value;
+            const msg = document.getElementById('depositMsg');
+
+            if (!amount || amount <= 0) {
+                msg.className = 'message error';
+                msg.textContent = 'Введіть коректну суму';
+                return;
+            }
+
+            try {
+                const res = await fetch(`${API_URL}/transactions/deposit`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ amount, description: description || null })
+                });
+                const data = await res.json();
+
+                if (!res.ok) {
+                    msg.className = 'message error';
+                    msg.textContent = data.detail || 'Не вдалося поповнити баланс';
+                    return;
+                }
+
+                closeModal('depositModal');
+                loadTransactions();
+            } catch (err) {
+                msg.className = 'message error';
+                msg.textContent = 'Помилка з\'єднання';
+            }
+        }
+
+        function showSalary() {
+            const modal = document.createElement('div');
+            modal.className = 'modal-overlay';
+            modal.id = 'salaryModal';
+            modal.innerHTML = `
+                <div class="modal">
+                    <h2>💼 Нарахувати зарплату</h2>
+                    <div id="salaryMsg" class="message"></div>
+                    <input type="number" id="salaryAmount" placeholder="Сума зарплати" step="0.01" min="0.01" required>
+                    <input type="text" id="salaryDescription" placeholder="Опис (необов'язково)" value="Monthly salary">
+                    <div style="display:flex;gap:8px;margin-top:12px;">
+                        <button class="btn btn-primary" onclick="doSalary()" style="flex:1;">Нарахувати</button>
+                        <button class="btn btn-secondary" onclick="closeModal('salaryModal')">Скасувати</button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+        }
+
+        async function doSalary() {
+            const amount = parseFloat(document.getElementById('salaryAmount').value);
+            const description = document.getElementById('salaryDescription').value;
+            const msg = document.getElementById('salaryMsg');
+
+            if (!amount || amount <= 0) {
+                msg.className = 'message error';
+                msg.textContent = 'Введіть коректну суму';
+                return;
+            }
+
+            try {
+                const res = await fetch(`${API_URL}/transactions/salary`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ amount, description: description || null })
+                });
+                const data = await res.json();
+
+                if (!res.ok) {
+                    msg.className = 'message error';
+                    msg.textContent = data.detail || 'Не вдалося нарахувати зарплату';
+                    return;
+                }
+
+                closeModal('salaryModal');
+                loadTransactions();
+            } catch (err) {
+                msg.className = 'message error';
+                msg.textContent = 'Помилка з\'єднання';
+            }
+        }
+
+        function showTransferToCard() {
+            const modal = document.createElement('div');
+            modal.className = 'modal-overlay';
+            modal.id = 'transferModal';
+            modal.innerHTML = `
+                <div class="modal">
+                    <h2>💳 Переказати на картку</h2>
+                    <div id="transferMsg" class="message"></div>
+                    <select id="transferCardId"><option value="">Завантаження карток...</option></select>
+                    <input type="number" id="transferAmount" placeholder="Сума переказу" step="0.01" min="0.01" required>
+                    <div style="display:flex;gap:8px;margin-top:12px;">
+                        <button class="btn btn-primary" onclick="doTransferToCard()" style="flex:1;">Переказати</button>
+                        <button class="btn btn-secondary" onclick="closeModal('transferModal')">Скасувати</button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+            
+            // Load cards for select
+            fetch(`${API_URL}/cards/`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            })
+            .then(r => r.json())
+            .then(cards => {
+                const select = document.getElementById('transferCardId');
+                if (cards.length === 0) {
+                    select.innerHTML = '<option value="">Немає доступних карток</option>';
+                } else {
+                    select.innerHTML = cards.map(c => 
+                        `<option value="${c.id}">${c.brand} ••••${c.card_number.slice(-4)} (${c.balance} ${c.currency})</option>`
+                    ).join('');
+                }
+            })
+            .catch(() => {
+                document.getElementById('transferCardId').innerHTML = '<option value="">Помилка завантаження</option>';
+            });
+        }
+
+        async function doTransferToCard() {
+            const cardId = document.getElementById('transferCardId').value;
+            const amount = parseFloat(document.getElementById('transferAmount').value);
+            const msg = document.getElementById('transferMsg');
+
+            if (!cardId) {
+                msg.className = 'message error';
+                msg.textContent = 'Виберіть картку';
+                return;
+            }
+
+            if (!amount || amount <= 0) {
+                msg.className = 'message error';
+                msg.textContent = 'Введіть коректну суму';
+                return;
+            }
+
+            try {
+                const res = await fetch(`${API_URL}/transactions/transfer-to-card`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ card_id: cardId, amount })
+                });
+                const data = await res.json();
+
+                if (!res.ok) {
+                    msg.className = 'message error';
+                    msg.textContent = data.detail || 'Не вдалося переказати кошти';
+                    return;
+                }
+
+                closeModal('transferModal');
+                loadTransactions();
+            } catch (err) {
+                msg.className = 'message error';
+                msg.textContent = 'Помилка з\'єднання';
+            }
+        }
+
+        // Tabs
+        function switchTab(tab, el) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            el.classList.add('active');
+            
+            document.getElementById('paymentsTab').classList.toggle('hidden', tab !== 'payments');
+            document.getElementById('createTab').classList.toggle('hidden', tab !== 'create');
+            document.getElementById('cardsTab').classList.toggle('hidden', tab !== 'cards');
+            document.getElementById('transactionsTab').classList.toggle('hidden', tab !== 'transactions');
+            document.getElementById('adminTab').classList.toggle('hidden', tab !== 'admin');
+            
+            if (tab === 'admin') loadAdminData();
+            if (tab === 'cards') loadCards();
+            if (tab === 'transactions') loadTransactions();
+        }
+    </script>
+</body>
+</html>
