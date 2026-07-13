@@ -1,0 +1,6 @@
+2026-07-08 16:51:51,904 INFO Завантажено токен: 8861897014...
+2026-07-08 16:51:51,913 INFO Старт бота
+2026-07-08 16:51:51,913 INFO Запускаю polling...
+2026-07-08 16:51:51,913 INFO Start polling
+2026-07-08 16:51:52,089 INFO Run polling for bot @EMERALDSupportbot id=8861897014 - 'EMERALD'
+2026-07-08 16:52:48,760 WARNING Received SIGTERM signal
