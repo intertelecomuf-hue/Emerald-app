@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🏡 Домик на дереві</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="game-container">
+        <header>
+            <h1>🏡 Домик на дереві</h1>
+            <div id="resources">
+                <div class="resource"><span class="icon">🪵</span> Дерево: <span id="wood">0</span></div>
+                <div class="resource"><span class="icon">🪨</span> Каміння: <span id="stone">0</span></div>
+                <div class="resource"><span class="icon">🪟</span> Скло: <span id="glass">0</span></div>
+                <div class="resource"><span class="icon">🔩</span> Цвяхи: <span id="nails">0</span></div>
+                <div class="resource"><span class="icon">💰</span> Крони: <span id="coins">5</span></div>
+            </div>
+        </header>
+
+        <main>
+            <div id="world-area">
+                <div id="game-world">
+                    <!-- Небо -->
+                    <div id="sky">
+                        <div id="sun"></div>
+                        <div id="clouds">
+                            <div class="cloud" style="top: 30px; left: 50px;"></div>
+                            <div class="cloud" style="top: 60px; left: 250px;"></div>
+                            <div class="cloud" style="top: 20px; left: 450px;"></div>
+                        </div>
+                    </div>
+
+                    <!-- Дерева -->
+                    <div class="fp-tree" id="tree-1" style="left: 80px;">
+                        <div class="fp-tree-trunk"></div>
+                        <div class="fp-tree-top"></div>
+                        <div class="fp-tree-hits">5 ударів</div>
+                    </div>
+                    <div class="fp-tree" id="tree-2" style="left: 250px;">
+                        <div class="fp-tree-trunk"></div>
+                        <div class="fp-tree-top"></div>
+                        <div class="fp-tree-hits">5 ударів</div>
+                    </div>
+                    <div class="fp-tree" id="tree-3" style="left: 420px;">
+                        <div class="fp-tree-trunk"></div>
+                        <div class="fp-tree-top"></div>
+                        <div class="fp-tree-hits">5 ударів</div>
+                    </div>
+                    <div class="fp-tree" id="tree-4" style="left: 590px;">
+                        <div class="fp-tree-trunk"></div>
+                        <div class="fp-tree-top"></div>
+                        <div class="fp-tree-hits">5 ударів</div>
+                    </div>
+
+                    <!-- Камені на землі -->
+                    <div class="fp-rock" id="rock-1" style="left: 140px;">
+                        <div class="fp-rock-body">🪨</div>
+                        <div class="fp-rock-hits">3 удари</div>
+                    </div>
+                    <div class="fp-rock" id="rock-2" style="left: 340px;">
+                        <div class="fp-rock-body">🪨</div>
+                        <div class="fp-rock-hits">3 удари</div>
+                    </div>
+                    <div class="fp-rock" id="rock-3" style="left: 530px;">
+                        <div class="fp-rock-body">🪨</div>
+                        <div class="fp-rock-hits">3 удари</div>
+                    </div>
+
+                    <!-- Наш домик на дереві -->
+                    <div id="fp-home-tree">
+                        <div id="fp-home-crown">
+                            <div id="house">
+                                <div id="house-base">
+                                    <div id="floor"></div>
+                                    <div id="walls">
+                                        <div id="wall-left"></div>
+                                        <div id="wall-right"></div>
+                                        <div id="wall-back"></div>
+                                    </div>
+                                    <div id="roof"></div>
+                                    <div id="window"></div>
+                                    <div id="door"></div>
+                                    <div id="balcony"></div>
+                                    <div id="fence"></div>
+                                    <div id="ladder"></div>
+                                    <div id="flag"></div>
+                                </div>
+                                <div id="house-levels">
+                                    <div class="level" id="level-1"></div>
+                                    <div class="level" id="level-2"></div>
+                                    <div class="level" id="level-3"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="fp-home-trunk"></div>
+                    </div>
+
+                    <!-- Земля -->
+                    <div id="fp-ground"></div>
+
+                    <!-- Приціл -->
+                    <div id="crosshair">+</div>
+
+                    <!-- Рука з інструментом -->
+                    <div id="fp-hand">
+                        <div id="fp-hand-tool">🪓</div>
+                    </div>
+
+                    <!-- Інтер'єр (всередині доміка) -->
+                    <div id="interior-view" style="display:none;">
+                        <div id="interior-wall">
+                            <div id="interior-floor"></div>
+                            <div id="interior-window-view"></div>
+                            <div id="interior-items">
+                                <div class="interior-item" id="item-tv">📺</div>
+                                <div class="interior-item" id="item-cabinet">🗄️</div>
+                                <div class="interior-item" id="item-sofa">🛋️</div>
+                                <div class="interior-item" id="item-armchair">💺</div>
+                                <div class="interior-item" id="item-table">🪑</div>
+                                <div class="interior-item" id="item-bed">🛏️</div>
+                                <div class="interior-item" id="item-rug">🧶</div>
+                                <div class="interior-item" id="item-plant">🌱</div>
+                                <div class="interior-item" id="item-painting">🖼️</div>
+                                <div class="interior-item" id="item-lamp">💡</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Інвентар (внизу) -->
+                    <div id="inventory-bar">
+                        <div class="inv-slot active" id="slot-axe" onclick="selectTool('axe')">
+                            <span class="inv-icon">🪓</span>
+                            <span class="inv-name">Сокира</span>
+                            <span class="inv-key">1</span>
+                        </div>
+                        <div class="inv-slot" id="slot-pickaxe" onclick="selectTool('pickaxe')">
+                            <span class="inv-icon">⛏️</span>
+                            <span class="inv-name">Кирка</span>
+                            <span class="inv-key">2</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="controls-hint">
+                    WASD — ходити | ← → — повернути голову | ПКМ/E — рубнути | Q/1/2 — змінити інструмент
+                </div>
+            </div>
+
+            <aside id="actions-panel">
+                <h2>Дії</h2>
+
+                <div id="player-section">
+                    <h3>🧑 Спорядження</h3>
+                    <p>Інструмент: <span id="current-tool">🪓 Стара сокира</span></p>
+                    <p>Міцність: <span id="tool-durability">10</span>/<span id="tool-maxdura">10</span></p>
+                    <p>Дерев зрубано: <span id="trees-cut">0</span></p>
+                </div>
+
+                <div id="craft-section">
+                    <h3>🔨 Крафт</h3>
+                    <button onclick="craftNails()" class="action-btn">🔩 Зробити цвяхи (2 каміння)</button>
+                    <button onclick="sellResources()" class="action-btn">💰 Продати ресурси</button>
+                </div>
+
+                <div id="tools-section">
+                    <h3>🛠️ Інструменти</h3>
+                    <button onclick="upgradeAxe()" class="action-btn tool-btn">🪓 Покращити сокиру (<span id="axe-cost">15</span> крон)</button>
+                    <button onclick="upgradePickaxe()" class="action-btn tool-btn">⛏️ Купити/покращити кирку (<span id="pickaxe-cost">10</span> крон)</button>
+                </div>
+
+                <div id="build-section">
+                    <h3>🏗️ Будівництво</h3>
+                    <button onclick="buildFloor()" class="action-btn">🪵 Підлога (5 дерева, 3 цвяхи)</button>
+                    <button onclick="buildWall()" class="action-btn">🧱 Стіна (8 дерева, 5 цвяхів)</button>
+                    <button onclick="buildRoof()" class="action-btn">🏠 Дах (10 дерева, 5 каміння, 5 цвяхів)</button>
+                    <button onclick="buildWindow()" class="action-btn">🪟 Вікно (3 дерева, 2 скла)</button>
+                    <button onclick="buildDoor()" class="action-btn">🚪 Двері (6 дерева, 3 цвяхи)</button>
+                    <button onclick="buildBalcony()" class="action-btn">🌿 Балкон (12 дерева, 6 цвяхів)</button>
+                    <button onclick="buildFence()" class="action-btn">⛩️ Огорожа (8 дерева, 4 цвяхи)</button>
+                    <button onclick="buildLadder()" class="action-btn">🪜 Драбина (5 дерева, 2 цвяхи)</button>
+                    <button onclick="buildFlag()" class="action-btn">🚩 Прапорець (2 дерева, 1 скло)</button>
+                    <button onclick="addLevel()" class="action-btn level-btn">⬆️ Додати поверх (20 дерева, 10 каміння, 10 цвяхів)</button>
+                </div>
+
+                <div id="enter-section">
+                    <h3>🚪 Домік</h3>
+                    <button onclick="enterHouse()" class="action-btn enter-btn">🏠 Зайти в домік</button>
+                </div>
+
+                <div id="interior-section" style="display:none;">
+                    <h3>🛋️ Інтер'єр</h3>
+                    <button onclick="exitHouse()" class="action-btn exit-btn">🌳 Вийти на вулицю</button>
+                    <p class="interior-info">Місця: <span id="interior-slots">0</span>/<span id="interior-max">5</span></p>
+                    <button onclick="buyInterior('tv')" class="action-btn interior-btn">📺 Телевізор (15 крон)</button>
+                    <button onclick="buyInterior('cabinet')" class="action-btn interior-btn">🗄️ Шкафчик (10 крон)</button>
+                    <button onclick="buyInterior('sofa')" class="action-btn interior-btn">🛋️ Диван (20 крон)</button>
+                    <button onclick="buyInterior('armchair')" class="action-btn interior-btn">💺 Крісло (12 крон)</button>
+                    <button onclick="buyInterior('table')" class="action-btn interior-btn">🪑 Стіл (8 крон)</button>
+                    <button onclick="buyInterior('bed')" class="action-btn interior-btn">🛏️ Ліжко (25 крон)</button>
+                    <button onclick="buyInterior('rug')" class="action-btn interior-btn">🧶 Килим (6 крон)</button>
+                    <button onclick="buyInterior('plant')" class="action-btn interior-btn">🌱 Рослина (10 крон)</button>
+                    <button onclick="buyInterior('painting')" class="action-btn interior-btn">🖼️ Картина (14 крон)</button>
+                    <button onclick="buyInterior('lamp')" class="action-btn interior-btn">💡 Торшер (18 крон)</button>
+                </div>
+
+                <div id="stats-section">
+                    <h3>📊 Статистика</h3>
+                    <p>Рівень будинку: <span id="house-level">1</span></p>
+                    <p>Комфорт: <span id="comfort">0</span>%</p>
+                    <p>Зібрано дій: <span id="actions-done">0</span></p>
+                </div>
+            </aside>
+        </main>
+
+        <div id="message-log"></div>
+    </div>
+
+    <script src="game.js"></script>
+</body>
+</html>

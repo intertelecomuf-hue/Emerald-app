@@ -1,0 +1,29 @@
+R_DEF: Internal format may change without notice
+local
+color emerald_accent
+color emerald_background
+color emerald_error
+color emerald_on_background
+color emerald_on_primary
+color emerald_on_surface
+color emerald_primary
+color emerald_primary_dark
+color emerald_primary_light
+color emerald_surface
+drawable ic_launcher_background
+drawable ic_launcher_foreground
+mipmap ic_launcher
+mipmap ic_launcher_round
+string app_name
+string email_label
+string have_account
+string login_button
+string login_error
+string login_title
+string logout_button
+string no_account
+string password_label
+string register_button
+string register_error
+string welcome_message
+style Theme.EmeraldApp

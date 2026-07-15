@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="emerald_primary">#FF2E7D32</color>
+    <color name="emerald_primary_dark">#FF1B5E20</color>
+    <color name="emerald_primary_light">#FF60AD5E</color>
+    <color name="emerald_accent">#FF00C853</color>
+    <color name="emerald_background">#FFF5F5F5</color>
+    <color name="emerald_surface">#FFFFFFFF</color>
+    <color name="emerald_on_primary">#FFFFFFFF</color>
+    <color name="emerald_on_background">#FF212121</color>
+    <color name="emerald_on_surface">#FF212121</color>
+    <color name="emerald_error">#FFD32F2F</color>
+</resources>

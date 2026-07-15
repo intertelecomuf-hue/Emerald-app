@@ -1,0 +1,259 @@
+/**
+ * TouchManager.cpp - XPT2046 touch handling with debounce & calibration
+ *
+ * Uses TFT_eSPI's built-in getTouch() for reliable SPI reads.
+ */
+
+#include "TouchManager.h"
+#include "../config.h"
+
+#define TOUCH_DEBUG 1
+
+TouchManager::TouchManager()
+    : _spi(nullptr)
+    , _tft(nullptr)
+    , _csPin(PIN_TOUCH_CS)
+    , _irqPin(PIN_TOUCH_IRQ)
+    , _lastTouchTime(0)
+    , _debounceMs(TOUCH_DEBOUNCE_MS)
+    , _xMin(TOUCH_X_MIN), _xMax(TOUCH_X_MAX)
+    , _yMin(TOUCH_Y_MIN), _yMax(TOUCH_Y_MAX)
+    , _swapXY(TOUCH_SWAP_XY)
+    , _invertX(TOUCH_INVERT_X), _invertY(TOUCH_INVERT_Y)
+    , _wasTouching(false)
+    , _tapHappened(false)
+    , _tapX(-1), _tapY(-1)
+    , _pressStartTime(0)
+    , _pressStartX(-1), _pressStartY(-1)
+    , _longPressReported(false)
+    , _dragActive(false)
+    , _xraw(0), _yraw(0)
+{
+}
+
+void TouchManager::begin(SPIClass& spiBus) {
+    _spi = &spiBus;
+    pinMode(_csPin, OUTPUT);
+    digitalWrite(_csPin, HIGH);
+    pinMode(_irqPin, INPUT);
+    Serial.println("[TouchManager] Started");
+}
+
+void TouchManager::setTFT(TFT_eSPI* tftPtr) {
+    _tft = tftPtr;
+}
+
+void TouchManager::setCalibration(int xMin, int xMax, int yMin, int yMax,
+                                  bool swapXY, bool invertX, bool invertY) {
+    _xMin = xMin; _xMax = xMax;
+    _yMin = yMin; _yMax = yMax;
+    _swapXY = swapXY; _invertX = invertX; _invertY = invertY;
+}
+
+void TouchManager::calibrate(int rawX, int rawY, int &outX, int &outY) {
+    if (rawX == 0 && rawY == 0) {
+        outX = 160; outY = 120;
+        return;
+    }
+    // Swap axes if needed
+    int rx = rawX, ry = rawY;
+    if (_swapXY) { int t = rx; rx = ry; ry = t; }
+    
+    // Invert if needed
+    if (_invertX) rx = _xMax - rx + _xMin;
+    if (_invertY) ry = _yMax - ry + _yMin;
+    
+    // Map raw ADC range to screen pixel coordinates
+    // Clamp to raw min/max first
+    if (rx < _xMin) rx = _xMin;
+    if (rx > _xMax) rx = _xMax;
+    if (ry < _yMin) ry = _yMin;
+    if (ry > _yMax) ry = _yMax;
+    
+    // Map: raw(_xMin.._xMax) -> pixel(0..DISP_WIDTH-1)
+    outX = (long)(rx - _xMin) * (DISP_WIDTH - 1) / (_xMax - _xMin);
+    outY = (long)(ry - _yMin) * (DISP_HEIGHT - 1) / (_yMax - _yMin);
+    
+    // Safety clamp
+    if (outX < 0) outX = 0;
+    if (outX >= DISP_WIDTH) outX = DISP_WIDTH - 1;
+    if (outY < 0) outY = 0;
+    if (outY >= DISP_HEIGHT) outY = DISP_HEIGHT - 1;
+}
+
+bool TouchManager::readTouchXY(int16_t &x, int16_t &y) {
+    // Use TFT_eSPI's getTouch() with low threshold to detect ANY touch
+    // This returns calibrated pixel coordinates directly
+    if (_tft) {
+        uint16_t tx = 0, ty = 0;
+        // getTouch() returns true only when actually touched (Z-pressure > threshold)
+        // It returns SCREEN pixel coordinates (already calibrated by TFT_eSPI)
+        bool touched = _tft->getTouch(&tx, &ty, 400);  // lower threshold = more sensitive
+        if (touched) {
+            // When using getTouch() the coordinates are already in pixels
+            // so we DON'T apply calibrate() — just pass through
+            x = tx;
+            y = ty;
+            Serial.printf("[TOUCH SCREEN] pixel(%d,%d)\n", x, y);
+            return true;
+        }
+    }
+    return false;
+}
+
+// Best-two-of-three averaging (stub — getTouchRaw handles it internally)
+int16_t TouchManager::bestTwoAvg(int16_t a, int16_t b, int16_t c) {
+    return (a + b + c) / 3;
+}
+
+// ============================================================
+// Enhanced getTouch() with gesture recognition
+// ============================================================
+TouchEvent TouchManager::getTouch() {
+    TouchEvent ev;
+    ev.pressed = false;
+    ev.x = -1;
+    ev.y = -1;
+    ev.action = TOUCH_NONE;
+    ev.startX = -1;
+    ev.startY = -1;
+
+    if (!_spi) return ev;
+
+    bool penIrqActive = (digitalRead(_irqPin) == LOW);
+    unsigned long now = millis();
+
+    if (penIrqActive) {
+        int16_t rawX, rawY;
+        if (readTouchXY(rawX, rawY)) {
+            // readTouchXY returns pixel coordinates directly from TFT_eSPI::getTouch()
+            ev.pressed = true;
+            ev.x = rawX;
+            ev.y = rawY;
+            ev.action = TOUCH_NONE;
+
+            // --- NEW PRESS: record start position & time ---
+            if (!_wasTouching) {
+                _tapX = rawX;
+                _tapY = rawY;
+                _pressStartX = rawX;
+                _pressStartY = rawY;
+                _pressStartTime = now;
+                _longPressReported = false;
+                _dragActive = false;
+                _wasTouching = true;
+                Serial.printf("[TOUCH] PRESS START at (%d,%d)\n", rawX, rawY);
+            }
+            // --- CONTINUED PRESS: check for drag / long press ---
+            else {
+                int dx = rawX - _pressStartX;
+                int dy = rawY - _pressStartY;
+                int dist = dx + dy;
+                if (dist < 0) dist = -dist; // abs Manhattan
+
+                // Drag detection — moved beyond threshold
+                if (!_dragActive && dist >= DRAG_THRESHOLD) {
+                    _dragActive = true;
+                    Serial.printf("[TOUCH] DRAG START at (%d,%d) dx=%d dy=%d\n",
+                                  rawX, rawY, dx, dy);
+                }
+
+                if (_dragActive) {
+                    ev.action = TOUCH_DRAG;
+                    ev.startX = _pressStartX;
+                    ev.startY = _pressStartY;
+                }
+
+                // Long press — held long enough without dragging
+                if (!_longPressReported && !_dragActive &&
+                    (now - _pressStartTime >= LONG_PRESS_MS)) {
+                    _longPressReported = true;
+                    ev.action = TOUCH_LONG_PRESS;
+                    ev.startX = _pressStartX;
+                    ev.startY = _pressStartY;
+                    Serial.printf("[TOUCH] LONG PRESS at (%d,%d) dur=%lu\n",
+                                  rawX, rawY, now - _pressStartTime);
+                }
+            }
+        }
+    }
+
+    // --- RELEASE: determine what gesture just happened ---
+    if (!ev.pressed && _wasTouching) {
+        if (now - _lastTouchTime > _debounceMs) {
+            _lastTouchTime = now;
+
+            unsigned long pressDuration = now - _pressStartTime;
+            int dx = _tapX - _pressStartX;
+            int dy = _tapY - _pressStartY;
+            int adx = (dx >= 0 ? dx : -dx);
+            int ady = (dy >= 0 ? dy : -dy);
+
+            if (_dragActive) {
+                // Was dragging — check if it qualifies as a swipe
+                if ((adx >= SWIPE_THRESHOLD || ady >= SWIPE_THRESHOLD) &&
+                    pressDuration <= SWIPE_MAX_TIME) {
+                    // It's a fast swipe
+                    if (adx > ady) {
+                        ev.action = (dx > 0) ? TOUCH_SWIPE_RIGHT : TOUCH_SWIPE_LEFT;
+                    } else {
+                        ev.action = (dy > 0) ? TOUCH_SWIPE_DOWN : TOUCH_SWIPE_UP;
+                    }
+                    Serial.printf("[TOUCH] SWIPE %s dx=%d dy=%d dur=%lu\n",
+                                  (ev.action == TOUCH_SWIPE_LEFT) ? "LEFT" :
+                                  (ev.action == TOUCH_SWIPE_RIGHT) ? "RIGHT" :
+                                  (ev.action == TOUCH_SWIPE_UP) ? "UP" : "DOWN",
+                                  dx, dy, pressDuration);
+                } else {
+                    // Regular drag (not fast enough for swipe)
+                    ev.action = TOUCH_DRAG;
+                }
+                ev.startX = _pressStartX;
+                ev.startY = _pressStartY;
+                ev.x = _tapX;
+                ev.y = _tapY;
+            }
+            else if (_longPressReported) {
+                // Long press was already reported on press down
+                ev.action = TOUCH_LONG_PRESS;
+                ev.x = _tapX;
+                ev.y = _tapY;
+                ev.startX = _pressStartX;
+                ev.startY = _pressStartY;
+                Serial.printf("[TOUCH] LONG PRESS RELEASE at (%d,%d)\n", _tapX, _tapY);
+            }
+            else {
+                // Simple tap
+                if (_tapX == 0 && _tapY == 0) { _tapX = 160; _tapY = 120; }
+                _tapHappened = true;
+                ev.action = TOUCH_TAP;
+                ev.x = _tapX;
+                ev.y = _tapY;
+                ev.startX = _pressStartX;
+                ev.startY = _pressStartY;
+                Serial.printf("[TOUCH] TAP at (%d,%d) dur=%lu\n",
+                              _tapX, _tapY, pressDuration);
+            }
+        }
+        _wasTouching = false;
+    }
+
+    return ev;
+}
+
+bool TouchManager::getRawTouch(int16_t &rawX, int16_t &rawY) {
+    if (!_spi) return false;
+    bool penIrqActive = (digitalRead(_irqPin) == LOW);
+    if (penIrqActive) {
+        return readTouchXY(rawX, rawY);
+    }
+    return false;
+}
+
+bool TouchManager::getTap(int &tapX, int &tapY) {
+    if (_tapHappened) {
+        tapX = _tapX; tapY = _tapY;
+        _tapHappened = false; return true;
+    }
+    return false;
+}

@@ -1,0 +1,2543 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Е-сусля: Погляд у темряву (3D)</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=MedievalSharp&family=Special+Elite&display=swap');
+        *{margin:0;padding:0;box-sizing:border-box;}
+        body{background:#000;color:#b8a898;font-family:'Special Elite',serif;overflow:hidden;width:100vw;height:100vh;cursor:crosshair;}
+        
+        .dust{position:fixed;pointer-events:none;z-index:0;width:2px;height:2px;background:rgba(200,180,150,0.12);border-radius:50%;animation:dustFloat linear infinite;}
+        @keyframes dustFloat{0%{transform:translateY(100vh)translateX(0);opacity:0;}10%{opacity:1;}90%{opacity:1;}100%{transform:translateY(-10vh)translateX(20px);opacity:0;}}
+        
+        .vignette{position:fixed;top:0;left:0;right:0;bottom:0;pointer-events:none;z-index:5;background:radial-gradient(ellipse at center,transparent 35%,rgba(0,0,0,0.9) 100%);}
+        
+        .scene{display:none;position:fixed;top:0;left:0;right:0;bottom:0;}
+        .scene.active{display:flex;flex-direction:column;align-items:center;justify-content:center;animation:scFade 0.8s ease;}
+        @keyframes scFade{from{opacity:0;}to{opacity:1;}}
+        
+        #title{background:#0a0604;}
+        #title .content{text-align:center;max-width:550px;padding:20px;z-index:10;position:relative;}
+        #title .symbol{font-size:4em;opacity:0.5;animation:flicker 4s infinite;}
+        @keyframes flicker{0%,100%{text-shadow:0 0 10px rgba(180,80,30,0.4);}25%{text-shadow:0 0 25px rgba(180,80,30,0.7),0 0 50px rgba(180,30,10,0.2);}50%{text-shadow:0 0 5px rgba(180,80,30,0.3);}75%{text-shadow:0 0 20px rgba(180,80,30,0.5);}}
+        #title h1{font-family:'MedievalSharp',cursive;font-size:3.5em;color:#b03020;text-shadow:0 0 40px rgba(180,40,20,0.4);margin-bottom:5px;}
+        #title .subtitle{font-size:1.1em;color:#7a6a5a;font-style:italic;margin-bottom:20px;}
+        #title p{font-size:0.95em;line-height:1.8;color:#9a8a7a;margin-bottom:8px;}
+        
+        .btn{background:linear-gradient(135deg,#2a1a0e,#1a0e08);color:#b8a898;border:1px solid #4a3020;padding:8px 22px;font-family:'MedievalSharp',cursive;font-size:0.9em;cursor:pointer;transition:all 0.3s;text-transform:uppercase;letter-spacing:2px;margin:3px;}
+        .btn:hover{background:linear-gradient(135deg,#3a2a1e,#2a1a0e);border-color:#8a6040;box-shadow:0 0 25px rgba(100,50,20,0.3);transform:translateY(-2px);}
+        .btn:disabled{opacity:0.25;cursor:not-allowed;transform:none!important;box-shadow:none!important;}
+        .btn-danger{border-color:#5a1a1a;background:linear-gradient(135deg,#3a0e0e,#1a0808);}
+        .btn-danger:hover{border-color:#b03020;box-shadow:0 0 25px rgba(180,40,20,0.3);}
+        .btn-safe{border-color:#2a4a2a;background:linear-gradient(135deg,#1a2a1a,#0a1a0a);}
+        .btn-safe:hover{border-color:#4a8a4a;box-shadow:0 0 25px rgba(50,150,50,0.2);}
+        
+        .btn-door{font-size:0.9em;padding:14px 28px;min-width:200px;font-family:'MedievalSharp',cursive;letter-spacing:2px;text-transform:uppercase;border-width:3px;border-radius:8px;transition:all 0.3s;pointer-events:auto;position:relative;overflow:hidden;}
+        .btn-door::before{content:'';position:absolute;top:0;left:0;right:0;bottom:0;opacity:0;transition:opacity 0.3s;}
+        .btn-door:hover::before{opacity:1;}
+        .btn-door:disabled{opacity:0.3;cursor:not-allowed;transform:none!important;box-shadow:none!important;}
+        .btn-green{background:linear-gradient(135deg,#1a3a1a,#0d1f0d);border-color:#2a6a2a;color:#8acc8a;text-shadow:0 0 10px rgba(50,200,50,0.3);}
+        .btn-green:hover{background:linear-gradient(135deg,#2a5a2a,#1a3a1a);border-color:#4aaa4a;box-shadow:0 0 30px rgba(50,200,50,0.25),inset 0 0 30px rgba(50,200,50,0.05);transform:translateY(-3px);}
+        .btn-red{background:linear-gradient(135deg,#3a1a1a,#1f0d0d);border-color:#6a2a2a;color:#cc8a8a;text-shadow:0 0 10px rgba(200,50,50,0.3);}
+        .btn-red:hover{background:linear-gradient(135deg,#5a2a2a,#3a1a1a);border-color:#aa4a4a;box-shadow:0 0 30px rgba(200,50,50,0.25),inset 0 0 30px rgba(200,50,50,0.05);transform:translateY(-3px);}
+        .btn-door .door-icon{font-size:1.5em;display:block;margin-bottom:4px;}
+        .btn-door .door-label{font-size:0.75em;display:block;}
+        
+        #game-scene{background:#000;}
+        #three-container{position:absolute;top:0;left:0;width:100%;height:100%;}
+        #game-canvas{display:none;}
+        
+        #crosshair{
+            position:fixed;top:50%;left:50%;z-index:8;
+            transform:translate(-50%,-50%);
+            pointer-events:none;
+            color:rgba(200,180,150,0.4);
+            font-size:24px;
+            font-family:'Special Elite',serif;
+            text-shadow:0 0 8px rgba(200,180,150,0.1);
+            transition:color 0.3s;
+        }
+        #crosshair.locked{color:rgba(200,180,150,0.7);text-shadow:0 0 12px rgba(200,180,150,0.2);}
+        
+        #hint{
+            position:fixed;bottom:15px;left:50%;transform:translateX(-50%);
+            z-index:8;color:rgba(200,180,150,0.25);
+            font-family:'Special Elite',serif;font-size:0.75em;
+            text-align:center;pointer-events:none;
+            transition:opacity 0.5s;letter-spacing:1px;
+        }
+        
+        .hint-toggle{
+            position:fixed;bottom:50px;right:12px;z-index:11;
+            pointer-events:auto;font-size:0.7em;cursor:pointer;
+            background:rgba(10,6,4,0.7);border:1px solid #3a2a1a;border-radius:6px;
+            color:#7a6a5a;padding:4px 10px;font-family:'Special Elite',serif;
+            transition:color 0.3s,border-color 0.3s,background 0.3s;
+            text-transform:uppercase;letter-spacing:1px;
+        }
+        .hint-toggle:hover{color:#c8b89a;border-color:#8a6040;background:rgba(20,12,8,0.8);}
+        .hint-toggle.off{color:#4a3a2a;border-color:#2a1a10;}
+        .hint-toggle.off:hover{color:#8a7a6a;border-color:#4a3a2a;}
+        
+        #ui-overlay{
+            position:absolute;top:0;left:0;right:0;bottom:0;
+            pointer-events:none;z-index:10;
+            display:flex;flex-direction:column;align-items:center;justify-content:space-between;
+            padding:10px;
+        }
+        
+        #top-hud{width:100%;display:flex;justify-content:space-between;align-items:flex-start;gap:6px;}
+        
+        #level-info{
+            background:rgba(10,6,4,0.7);border:1px solid #2a1a10;border-radius:6px;
+            padding:4px 10px;font-size:0.8em;color:#7a6a5a;backdrop-filter:blur(3px);
+        }
+        #level-info strong{color:#c8b89a;}
+        
+        .dots-row{display:flex;gap:3px;pointer-events:auto;}
+        .l-dot{width:18px;height:18px;border:1px solid #3a2a1a;border-radius:50%;display:flex;justify-content:center;align-items:center;font-size:0.45em;color:#4a3a2a;transition:all 0.4s;font-family:'MedievalSharp',cursive;background:rgba(10,6,4,0.5);flex-shrink:0;}
+        .l-dot.done{border-color:#4a7a4a;color:#6aaa6a;background:rgba(50,100,50,0.15);box-shadow:0 0 8px rgba(50,150,50,0.15);}
+        .l-dot.cur{border-color:#b8a898;color:#c8b89a;background:rgba(200,180,150,0.1);box-shadow:0 0 12px rgba(200,180,150,0.15);animation:dotPulse 1.5s infinite;}
+        .l-dot.fail{border-color:#8a2020;color:#c0392b;background:rgba(180,40,20,0.1);}
+        @keyframes dotPulse{0%,100%{opacity:1;}50%{opacity:0.5;}}
+        
+        #bottom-hud{width:100%;display:flex;flex-direction:column;align-items:center;gap:4px;}
+        #action-row{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;}
+        #action-row .btn{font-size:0.8em;padding:6px 16px;pointer-events:auto;}
+        
+        #result-display{
+            background:rgba(10,6,4,0.8);border:1px solid transparent;border-radius:6px;
+            padding:4px 14px;font-size:0.8em;text-align:center;min-height:28px;
+            backdrop-filter:blur(3px);transition:all 0.3s;max-width:400px;
+        }
+        #result-display.ok{border-color:#2a4a2a;color:#7acc7a;}
+        #result-display.fail{border-color:#5a1a1a;color:#e05050;animation:shake 0.5s ease;}
+        #result-display.info{border-color:#6a4a3a;color:#d4aa80;}
+        #result-display.clean{color:#4a3a2a;border-color:#1a0e08;}
+        @keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-8px)}40%{transform:translateX(8px)}60%{transform:translateX(-5px)}80%{transform:translateX(5px)}}
+        
+        #retryBtn{pointer-events:auto;}
+        
+        .hidden-lore{position:absolute;bottom:2px;right:8px;font-size:0.45em;color:#1a0e08;cursor:pointer;z-index:20;transition:color 0.3s;pointer-events:auto;}
+        .hidden-lore:hover{color:#4a3a2a;}
+        
+        .flash{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(200,180,100,0.1);pointer-events:none;z-index:999;animation:flOut 0.5s ease forwards;}
+        @keyframes flOut{from{opacity:1;}to{opacity:0;}}
+        .blood-o{position:fixed;top:0;left:0;right:0;bottom:0;background:radial-gradient(ellipse at center,rgba(100,0,0,0.05),transparent 70%);pointer-events:none;z-index:998;animation:blFade 2s ease forwards;}
+        @keyframes blFade{from{opacity:1;}to{opacity:0;}}
+        
+        #final{background:#0a0604;}
+        #final .content{text-align:center;max-width:500px;padding:20px;z-index:10;position:relative;}
+        #final .ending-title{font-family:'MedievalSharp',cursive;font-size:2em;margin-bottom:10px;}
+        #final .ending-title.good{color:#4a8a4a;text-shadow:0 0 25px rgba(50,150,50,0.3);}
+        #final .ending-title.bad{color:#b03020;text-shadow:0 0 25px rgba(180,40,20,0.3);}
+        #final .story-text{font-size:0.85em;line-height:1.8;color:#9a8a7a;}
+        
+        /* --- Мультиплеєр --- */
+        #mp-section{border-top:1px solid #2a1a10;padding-top:12px;margin-top:10px;width:100%;}
+        #mp-section .mp-label{font-size:0.8em;color:#7a6a5a;margin-bottom:8px;}
+        #mp-section .mp-row{display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap;}
+        #mp-code-input{background:#1a0e08;border:1px solid #3a2a1a;color:#b8a898;padding:8px 10px;width:90px;text-align:center;font-family:'Special Elite',serif;font-size:1.3em;letter-spacing:6px;outline:none;transition:border-color 0.3s;}
+        #mp-code-input:focus{border-color:#8a6040;}
+        #mp-code-display{font-family:'MedievalSharp',cursive;font-size:2.5em;color:#d4aa80;letter-spacing:8px;text-shadow:0 0 20px rgba(200,180,100,0.3);margin:4px 0;}
+        #mp-status{font-size:0.75em;color:#6a5a4a;margin-top:4px;min-height:18px;}
+        #mp-status.connected{color:#4a8a4a;}
+        #mp-status.error{color:#b03020;}
+        #mp-players{font-size:0.6em;color:#5a4a3a;margin-top:2px;}
+        .mp-avatar-indicator{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:4px;}
+        .mp-avatar-indicator.online{background:#4a8a4a;box-shadow:0 0 6px rgba(50,150,50,0.5);}
+        .mp-avatar-indicator.offline{background:#4a3a2a;}
+        
+        @media(max-width:600px){
+            #title h1{font-size:2.5em;}
+            .btn{padding:5px 14px;font-size:0.8em;}
+            .btn-door{min-width:160px;padding:12px 18px;font-size:0.8em;}
+            #level-info{font-size:0.7em;}
+            #mp-code-display{font-size:2em;}
+        }
+    </style>
+</head>
+<body>
+    <div class="vignette"></div>
+    <div id="dustContainer"></div>
+    
+    <div id="crosshair">✧</div>
+    <div id="hint">[ Натисніть на екран • WASD/Клік — рух • F — ліхтарик • Миша — огляд ]</div>
+    
+    <div id="title" class="scene active">
+        <div class="content">
+            <div class="symbol">⟁</div>
+            <h1>Е-сусля</h1>
+            <div class="subtitle">Погляд у темряву</div>
+            <p>Двоє культистів переплутали <strong>свічку</strong> та <strong>дзеркало</strong> в ритуалі.<br>Замість покірного духа з'явилося <strong>ЩОСЬ</strong> зле.</p>
+            <button class="btn" onclick="startGame()" style="margin-top:15px;">▶ Самотня гра</button>
+            
+            <div id="mp-section">
+                <div class="mp-label">🎮 Гра з другом</div>
+                <div class="mp-row">
+                    <button class="btn" onclick="mpCreate()">🔑 Створити кімнату</button>
+                    <span style="color:#4a3a2a;">або</span>
+                    <input type="text" id="mp-code-input" maxlength="4" placeholder="XXXX" oninput="this.value=this.value.replace(/[^0-9]/g,'')">
+                    <button class="btn" onclick="mpJoin()">🔗 Приєднатися</button>
+                </div>
+                <div id="mp-status"></div>
+                <div id="mp-players"></div>
+                <div id="mp-code-display"></div>
+            </div>
+        </div>
+    </div>
+    
+    <div id="game-scene" class="scene">
+        <div id="three-container"></div>
+        
+        <div id="ui-overlay">
+            <div id="top-hud">
+                <div id="level-info">Рівень <strong id="lvlNum">1</strong>: <strong id="lvlName">Темна кімната</strong></div>
+                <div class="dots-row" id="dotsRow"></div>
+            </div>
+            
+            <div id="bottom-hud">
+                <div id="hp-bar-container" style="width:180px;height:8px;background:rgba(20,10,5,0.6);border:1px solid #2a1a10;border-radius:4px;overflow:hidden;pointer-events:none;">
+                    <div id="hp-bar-fill" style="height:100%;width:100%;background:#448844;border-radius:3px;transition:width 0.2s,background-color 0.3s;"></div>
+                </div>
+                <span id="hp-text" style="font-size:0.55em;color:#5a4a3a;pointer-events:none;">100/100</span>
+                <div id="result-display"></div>
+                <div id="partner-vote" style="font-size:0.65em;color:#5a4a3a;min-height:16px;"></div>
+                <div style="display:flex;align-items:center;gap:8px;">
+                    <span id="flashlight-indicator" style="font-size:1em;opacity:0.3;transition:opacity 0.2s;pointer-events:none;text-shadow:0 0 10px rgba(200,180,100,0.1);">🌑</span>
+                </div>
+                <div id="action-row">
+                    <button class="btn-door btn-green" id="btnSafe" onclick="makeChoice('none')">
+                        <span class="door-icon">🟢</span>
+                        <span class="door-label">Немає аномалії</span>
+                    </button>
+                    <button class="btn-door btn-red" id="btnAnom" onclick="makeChoice('anom')">
+                        <span class="door-icon">🔴</span>
+                        <span class="door-label">Аномалія</span>
+                    </button>
+                </div>
+                <div>
+                    <button class="btn btn-danger" id="retryBtn" onclick="restartGame()" style="display:none;font-size:0.7em;padding:4px 14px;">⟳ Заново</button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="hint-toggle" id="hintToggle" onclick="toggleHints()">💡 Підказки</div>
+        <div class="hidden-lore" onclick="showLore()">📜</div>
+    </div>
+    
+    <div id="final" class="scene">
+        <div class="content">
+            <div class="ending-title" id="endTitle"></div>
+            <div style="font-size:4em;margin-bottom:12px;opacity:0.5;" id="endSym">⟁</div>
+            <div class="story-text" id="endText"></div>
+            <div id="esStats" style="display:none;margin:8px 0;">
+                <div style="font-size:0.8em;color:#7a6a5a;">♾ Пройдено: <span id="esCount" style="color:#b8a898;font-weight:bold;">0</span> рівнів</div>
+            </div>
+            <button class="btn" onclick="startEndless()" id="btnEL" style="display:none;margin-top:10px;">♾ Нескінченний режим</button>
+            <button class="btn" onclick="restartGame()" style="margin-top:10px;">⟳ На початок</button>
+        </div>
+    </div>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/peerjs/1.5.1/peerjs.min.js"></script>
+    <script>
+        // =================== ДАНІ ===================
+        const LEVELS = [{name:'Темна кімната'},{name:'Забутий поверх'},{name:'Тиша'},{name:'Дзеркальна зала'},{name:'Остання межа'}];
+        
+        const DANGEROUS_ANOM = [
+            {name:'Пекельний вогонь 🜂',color:0xff4400,emissive:0xff2200,size:1.0,damageRange:2.0,damageRate:0.5},
+            {name:'Темна вирва 🜁',color:0x220044,emissive:0x5500aa,size:1.2,damageRange:2.5,damageRate:0.4},
+            {name:'Крижаний подих ❄',color:0x00ddff,emissive:0x0088cc,size:1.1,damageRange:2.2,damageRate:0.45},
+            {name:'Гниюча пляма ☠',color:0x448800,emissive:0x226600,size:1.0,damageRange:2.0,damageRate:0.35}
+        ];
+        
+        // Більше немає старих OBJ_ANOM і WALL_ANOM — тільки аномалії на основі предметів кімнати
+
+        
+        // Аномалії "чогось не вистачає"
+        const MISSING_ANOM = [
+            {name:'Немає ліжка',type:'bed',pos:{x:-0.3,z:-1.0}},
+            {name:'Немає тумби лівої',type:'nightstand_left',pos:{x:0.7,z:-1.0}},
+            {name:'Немає тумби правої',type:'nightstand_right',pos:{x:-1.5,z:-1.0}},
+            {name:'Немає лампи на лівій тумбі',type:'lamp_left',pos:{x:0.7,z:-1.0}},
+            {name:'Немає лампи на правій тумбі',type:'lamp_right',pos:{x:-1.5,z:-1.0}},
+            {name:'Немає шафи',type:'wardrobe',pos:{x:-2.3,z:-2.3}}
+        ];
+        
+        // Аномалії "щось не на своєму місці"
+        const DISPLACED_ANOM = [
+            {name:'Лампа на підлозі',type:'displaced_lamp',from:'lamp_left',to:{x:1.5,z:-2.2}},
+            {name:'Подушка на тумбі',type:'displaced_pillow',to:{x:0.7,z:-1.0}},
+            {name:'Шафа відсунута',type:'displaced_wardrobe',to:{x:-1.8,z:-1.8}},
+            {name:'Ліжко зсунуте',type:'displaced_bed',to:{x:0.5,z:-1.8}},
+            {name:'Тумба посеред кімнати',type:'displaced_ns',to:{x:-0.5,z:0.5}}
+        ];
+        
+        // Аномалії "щось зайве з'явилося"
+        const ADDED_ANOM = [
+            {name:'Зайвий стілець',type:'added_chair'},
+            {name:'Червона пляма на стіні',type:'added_spot'},
+            {name:'Тріснуте дзеркало',type:'added_mirror'},
+            {name:'Розлите скло',type:'added_glass'}
+        ];
+        
+        // Декорації кімнати (те, що може зникнути)
+        let roomDecor = [];
+        let displacedDecor = []; // для зміщених предметів
+        let addedDecor = [];     // для доданих предметів
+        let missingAnomIdx = -1;
+
+        // Додаткові матеріали для аномалій
+        const anomDecorMat = new THREE.MeshStandardMaterial({color:0x4a3a2a,roughness:0.85,metalness:0.1});
+        const anomDecorMatLight = new THREE.MeshStandardMaterial({color:0x6a5a4a,roughness:0.8,metalness:0.05});
+        const anomDecorMatDark = new THREE.MeshStandardMaterial({color:0x3a2818,roughness:0.9,metalness:0.05});
+        const anomMetalMat = new THREE.MeshStandardMaterial({color:0x8a7a6a,roughness:0.4,metalness:0.7});
+        const anomGlassMat = new THREE.MeshStandardMaterial({color:0x8899aa,roughness:0.1,metalness:0.9,transparent:true,opacity:0.3});
+
+        // ===== ФУНКЦІЇ ДЛЯ АНОМАЛІЙ "ЗМІЩЕННЯ" =====
+        function applyDisplacedAnomaly(data) {
+            // Очищаємо попередні зміщені декорації
+            displacedDecor.forEach(m => scene.remove(m));
+            displacedDecor = [];
+            
+            switch(data.type) {
+                case 'displaced_lamp': {
+                    // Лампа на підлозі — створюємо лампу що лежить
+                    const lampGroup = new THREE.Group();
+                    const baseMat = new THREE.MeshStandardMaterial({color:0x8a7a5a,roughness:0.5,metalness:0.4});
+                    const stemMat = new THREE.MeshStandardMaterial({color:0x6a5a4a,roughness:0.5,metalness:0.5});
+                    const shadeMat = new THREE.MeshStandardMaterial({color:0x4a3a2a,roughness:0.7,metalness:0.05,emissive:0x332211,emissiveIntensity:0.1});
+                    
+                    // Основа лампи (лежить на боці)
+                    const base = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.1, 0.03, 10), baseMat);
+                    base.rotation.x = Math.PI / 2;
+                    base.position.set(0, 0.02, 0);
+                    lampGroup.add(base);
+                    // Стояк (зігнутий)
+                    const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.025, 0.15, 6), stemMat);
+                    stem.rotation.z = 0.8;
+                    stem.position.set(0.05, 0.05, 0.02);
+                    lampGroup.add(stem);
+                    // Абажур (нахилений)
+                    const shade = new THREE.Mesh(new THREE.ConeGeometry(0.12, 0.12, 10), shadeMat);
+                    shade.rotation.z = 0.8;
+                    shade.position.set(0.1, 0.07, 0.02);
+                    lampGroup.add(shade);
+                    // Лампочка
+                    const bulbMat = new THREE.MeshBasicMaterial({color:0xffdd88,transparent:true,opacity:0.4});
+                    const bulb = new THREE.Mesh(new THREE.SphereGeometry(0.03, 6, 6), bulbMat);
+                    bulb.position.set(0.08, 0.05, 0.02);
+                    lampGroup.add(bulb);
+                    
+                    lampGroup.position.set(data.to.x, 0.02, data.to.z);
+                    lampGroup.userData.isDisplaced = true;
+                    scene.add(lampGroup);
+                    displacedDecor.push(lampGroup);
+                    break;
+                }
+                case 'displaced_pillow': {
+                    // Подушка на тумбі замість лампи
+                    const pillowMat = new THREE.MeshStandardMaterial({color:0x7a6a5a,roughness:0.95,metalness:0});
+                    const pillow = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.08, 0.3), pillowMat);
+                    pillow.position.set(data.to.x, 0.56, data.to.z);
+                    pillow.userData.isDisplaced = true;
+                    scene.add(pillow);
+                    displacedDecor.push(pillow);
+                    // Видаляємо лампу з лівої тумби (якщо є)
+                    removeAllOfType('lamp_left');
+                    break;
+                }
+                case 'displaced_wardrobe': {
+                    // Шафа зсунута з місця
+                    const wardMat = new THREE.MeshStandardMaterial({color:0x4a3520,roughness:0.8,metalness:0.05});
+                    const wardMatLight = new THREE.MeshStandardMaterial({color:0x5a4530,roughness:0.7,metalness:0.05});
+                    const handleMat = new THREE.MeshStandardMaterial({color:0x8a7a5a,roughness:0.5,metalness:0.5});
+                    
+                    const wardGroup = new THREE.Group();
+                    const body = new THREE.Mesh(new THREE.BoxGeometry(0.8, 2.0, 0.6), wardMat);
+                    body.position.y = 1.0;
+                    wardGroup.add(body);
+                    // Двері прочинені (аномалія)
+                    const doorL = new THREE.Mesh(new THREE.BoxGeometry(0.38, 1.8, 0.03), wardMatLight);
+                    doorL.position.set(-0.2, 1.0, 0.32);
+                    doorL.rotation.y = 0.3;
+                    wardGroup.add(doorL);
+                    const doorR = new THREE.Mesh(new THREE.BoxGeometry(0.38, 1.8, 0.03), wardMatLight);
+                    doorR.position.set(0.2, 1.0, 0.32);
+                    wardGroup.add(doorR);
+                    // Ручки
+                    const hL = new THREE.Mesh(new THREE.SphereGeometry(0.03, 6, 6), handleMat);
+                    hL.position.set(-0.2, 1.0, 0.35);
+                    wardGroup.add(hL);
+                    const hR = new THREE.Mesh(new THREE.SphereGeometry(0.03, 6, 6), handleMat);
+                    hR.position.set(0.2, 1.0, 0.35);
+                    wardGroup.add(hR);
+                    
+                    wardGroup.position.set(data.to.x, 0, data.to.z);
+                    wardGroup.rotation.y = 0.2; // трохи криво
+                    wardGroup.userData.isDisplaced = true;
+                    scene.add(wardGroup);
+                    displacedDecor.push(wardGroup);
+                    // Видаляємо оригінальну шафу
+                    removeAllOfType('wardrobe');
+                    break;
+                }
+                case 'displaced_bed': {
+                    // Ліжко зсунуте — просто змінюємо позицію
+                    const existingBed = roomDecor.find(m => m.userData && m.userData.decorType === 'bed');
+                    if (existingBed) {
+                        existingBed.position.set(data.to.x, 0, data.to.z);
+                        existingBed.rotation.y = 0.15; // криво стоїть
+                    }
+                    break;
+                }
+                case 'displaced_ns': {
+                    // Тумба посеред кімнати
+                    const nsMat = new THREE.MeshStandardMaterial({color:0x5a4030,roughness:0.7,metalness:0.05});
+                    const topMat = new THREE.MeshStandardMaterial({color:0x6a5a4a,roughness:0.6,metalness:0.1});
+                    const handleMat = new THREE.MeshStandardMaterial({color:0x8a7a5a,roughness:0.5,metalness:0.5});
+                    
+                    const nsGroup = new THREE.Group();
+                    const body = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.5, 0.5), nsMat);
+                    body.position.y = 0.25;
+                    nsGroup.add(body);
+                    const top = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.04, 0.55), topMat);
+                    top.position.y = 0.52;
+                    nsGroup.add(top);
+                    // Висунутий ящик
+                    const drawerMat = new THREE.MeshStandardMaterial({color:0x4a3520,roughness:0.7});
+                    const drawer = new THREE.Mesh(new THREE.BoxGeometry(0.38, 0.12, 0.15), drawerMat);
+                    drawer.position.set(0, 0.35, 0.35);
+                    nsGroup.add(drawer);
+                    
+                    nsGroup.position.set(data.to.x, 0, data.to.z);
+                    nsGroup.rotation.y = 0.4;
+                    nsGroup.userData.isDisplaced = true;
+                    scene.add(nsGroup);
+                    displacedDecor.push(nsGroup);
+                    // Видаляємо одну з оригінальних тумб
+                    removeAllOfType('nightstand_left');
+                    break;
+                }
+            }
+        }
+
+        // ===== ФУНКЦІЇ ДЛЯ АНОМАЛІЙ "ДОДАНО" =====
+        function applyAddedAnomaly(data) {
+            // Очищаємо попередні додані декорації
+            addedDecor.forEach(m => scene.remove(m));
+            addedDecor = [];
+            
+            switch(data.type) {
+                case 'added_chair': {
+                    // Зайвий стілець
+                    const chairMat = new THREE.MeshStandardMaterial({color:0x4a3520,roughness:0.8,metalness:0.05});
+                    const chairGroup = new THREE.Group();
+                    
+                    // Сидіння
+                    const seat = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.04, 0.3), chairMat);
+                    seat.position.y = 0.42;
+                    chairGroup.add(seat);
+                    // Спинка
+                    const back = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.3, 0.03), chairMat);
+                    back.position.set(0, 0.6, -0.15);
+                    chairGroup.add(back);
+                    // Ніжки
+                    for (let x of [-0.13, 0.13]) {
+                        for (let z of [-0.13, 0.13]) {
+                            const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.015, 0.02, 0.4, 4), anomDecorMat);
+                            leg.position.set(x, 0.2, z);
+                            chairGroup.add(leg);
+                        }
+                    }
+                    
+                    // Розміщуємо в випадковому місці
+                    const positions = [
+                        {x:1.5, z:1.2}, {x:-1.2, z:1.8}, {x:1.8, z:-0.5}, {x:-1.8, z:-0.3}
+                    ];
+                    const pos = positions[Math.floor(Math.random() * positions.length)];
+                    chairGroup.position.set(pos.x, 0, pos.z);
+                    chairGroup.rotation.y = Math.random() * Math.PI * 2;
+                    chairGroup.userData.isAdded = true;
+                    scene.add(chairGroup);
+                    addedDecor.push(chairGroup);
+                    break;
+                }
+                case 'added_spot': {
+                    // Червона пляма на стіні (спрайт)
+                    const spotMat = new THREE.SpriteMaterial({
+                        map: createBloodTexture2(),
+                        transparent: true,
+                        opacity: 0.7,
+                        depthWrite: false,
+                        blending: THREE.AdditiveBlending
+                    });
+                    const spot = new THREE.Sprite(spotMat);
+                    const wallSide = Math.floor(Math.random() * 4);
+                    const side = HALF - 0.04;
+                    switch(wallSide) {
+                        case 0: spot.position.set((Math.random()-0.5)*3, 1.0+Math.random()*0.5, -side); break;
+                        case 1: spot.position.set((Math.random()-0.5)*3, 1.0+Math.random()*0.5, side); break;
+                        case 2: spot.position.set(-side, 1.0+Math.random()*0.5, (Math.random()-0.5)*3); break;
+                        case 3: spot.position.set(side, 1.0+Math.random()*0.5, (Math.random()-0.5)*3); break;
+                    }
+                    spot.scale.set(0.4, 0.4, 1);
+                    spot.userData.isAdded = true;
+                    scene.add(spot);
+                    addedDecor.push(spot);
+                    break;
+                }
+                case 'added_mirror': {
+                    // Тріснуте дзеркало на стіні
+                    const mirrorMat = new THREE.MeshStandardMaterial({
+                        color:0x8899aa, roughness:0.1, metalness:0.9,
+                        transparent: true, opacity: 0.4
+                    });
+                    const mirrorFrame = new THREE.MeshStandardMaterial({color:0x5a4a3a, roughness:0.7, metalness:0.1});
+                    
+                    const mirrorGroup = new THREE.Group();
+                    const frame = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.7, 0.04), mirrorFrame);
+                    mirrorGroup.add(frame);
+                    
+                    const glass = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.62, 0.05), mirrorMat);
+                    glass.position.z = 0.01;
+                    mirrorGroup.add(glass);
+                    
+                    // Тріщина (лінія)
+                    const crackMat = new THREE.LineBasicMaterial({color:0xffffff, transparent: true, opacity: 0.15});
+                    const crackPoints = [
+                        new THREE.Vector3(-0.15, 0.2, 0.03),
+                        new THREE.Vector3(0.0, 0.05, 0.03),
+                        new THREE.Vector3(0.1, -0.1, 0.03),
+                        new THREE.Vector3(0.2, -0.2, 0.03)
+                    ];
+                    const crackGeo = new THREE.BufferGeometry().setFromPoints(crackPoints);
+                    const crack = new THREE.Line(crackGeo, crackMat);
+                    mirrorGroup.add(crack);
+                    
+                    const wallSide = Math.floor(Math.random() * 4);
+                    const side = HALF - 0.04;
+                    switch(wallSide) {
+                        case 0: mirrorGroup.position.set((Math.random()-0.5)*2, 1.3, -side); break;
+                        case 1: mirrorGroup.position.set((Math.random()-0.5)*2, 1.3, side); break;
+                        case 2: mirrorGroup.position.set(-side, 1.3, (Math.random()-0.5)*2); break;
+                        case 3: mirrorGroup.position.set(side, 1.3, (Math.random()-0.5)*2); break;
+                    }
+                    mirrorGroup.userData.isAdded = true;
+                    scene.add(mirrorGroup);
+                    addedDecor.push(mirrorGroup);
+                    break;
+                }
+                case 'added_glass': {
+                    // Розлите скло на підлозі
+                    const glassMat2 = new THREE.MeshStandardMaterial({
+                        color:0x88aacc, roughness:0.05, metalness:0.8,
+                        transparent: true, opacity: 0.3
+                    });
+                    
+                    const glassGroup = new THREE.Group();
+                    // Кілька скалок
+                    for (let i = 0; i < 5; i++) {
+                        const shard = new THREE.Mesh(
+                            new THREE.CircleGeometry(0.04 + Math.random()*0.06, 4 + Math.floor(Math.random()*3)),
+                            glassMat2
+                        );
+                        shard.position.set(
+                            (Math.random()-0.5)*0.4,
+                            0.005,
+                            (Math.random()-0.5)*0.4
+                        );
+                        shard.rotation.x = -Math.PI / 2;
+                        shard.rotation.z = Math.random() * Math.PI;
+                        glassGroup.add(shard);
+                    }
+                    
+                    const positions = [
+                        {x:0.5, z:0.5}, {x:-0.5, z:1.0}, {x:1.0, z:-0.8}, {x:-0.8, z:-0.5}
+                    ];
+                    const pos = positions[Math.floor(Math.random() * positions.length)];
+                    glassGroup.position.set(pos.x, 0.01, pos.z);
+                    glassGroup.userData.isAdded = true;
+                    scene.add(glassGroup);
+                    addedDecor.push(glassGroup);
+                    break;
+                }
+            }
+        }
+
+        function createBloodTexture2() {
+            const c = document.createElement('canvas'); c.width = 64; c.height = 64;
+            const cx = c.getContext('2d');
+            const grad = cx.createRadialGradient(32, 32, 0, 32, 32, 30);
+            grad.addColorStop(0, 'rgba(180,20,20,0.9)');
+            grad.addColorStop(0.3, 'rgba(120,10,10,0.7)');
+            grad.addColorStop(0.7, 'rgba(80,5,5,0.4)');
+            grad.addColorStop(1, 'rgba(50,0,0,0)');
+            cx.fillStyle = grad; cx.fillRect(0, 0, 64, 64);
+            // Бризки
+            for (let i = 0; i < 8; i++) {
+                cx.fillStyle = `rgba(150,15,15,${0.2+Math.random()*0.3})`;
+                cx.beginPath();
+                cx.arc(20+Math.random()*30, 15+Math.random()*30, 1+Math.random()*4, 0, Math.PI*2);
+                cx.fill();
+            }
+            return new THREE.CanvasTexture(c);
+        }
+
+        function createTV() {
+            const tvGroup = new THREE.Group();
+            
+            // Корпус телевізора (екран)
+            const tvMat = new THREE.MeshStandardMaterial({color:0x1a1a1a, roughness:0.7, metalness:0.1});
+            const tvBody = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.25, 0.06), tvMat);
+            tvBody.position.z = 0;
+            tvGroup.add(tvBody);
+            
+            // Рамка
+            const frameMat = new THREE.MeshStandardMaterial({color:0x2a2a2a, roughness:0.6, metalness:0.3});
+            const frame = new THREE.Mesh(new THREE.BoxGeometry(0.38, 0.28, 0.03), frameMat);
+            frame.position.z = -0.005;
+            tvGroup.add(frame);
+            
+            // Екран (темний)
+            const screenMat = new THREE.MeshStandardMaterial({
+                color: 0x0a0a0a,
+                roughness: 0.1,
+                metalness: 0.8,
+                emissive: 0x001122,
+                emissiveIntensity: 0.05
+            });
+            const screen = new THREE.Mesh(new THREE.BoxGeometry(0.30, 0.20, 0.01), screenMat);
+            screen.position.z = 0.01;
+            tvGroup.add(screen);
+            
+            // Підставка
+            const standMat = new THREE.MeshStandardMaterial({color:0x1a1a1a, roughness:0.8, metalness:0.2});
+            const stand = new THREE.Mesh(new THREE.BoxGeometry(0.10, 0.03, 0.08), standMat);
+            stand.position.set(0, -0.145, -0.02);
+            tvGroup.add(stand);
+            
+            // Ніжка підставки
+            const legMat = new THREE.MeshStandardMaterial({color:0x2a2a2a, roughness:0.7, metalness:0.3});
+            const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.015, 0.02, 0.03, 6), legMat);
+            leg.position.set(0, -0.165, -0.02);
+            tvGroup.add(leg);
+            
+            // Розміщуємо на правій стіні (позитивна X)
+            tvGroup.position.set(HALF - 0.04, 1.4, 0.5);
+            tvGroup.rotation.y = -Math.PI / 2;
+            tvGroup.userData.decorType = 'tv';
+            scene.add(tvGroup);
+            roomDecor.push(tvGroup);
+        }
+
+        function createRoomDecor() {
+
+            // Очищаємо старі декорації
+            roomDecor.forEach(m => scene.remove(m));
+
+            roomDecor = [];
+            missingAnomIdx = -1;
+            
+            const decorMat = new THREE.MeshStandardMaterial({color:0x4a3a2a,roughness:0.85,metalness:0.1});
+            const decorMatLight = new THREE.MeshStandardMaterial({color:0x6a5a4a,roughness:0.8,metalness:0.05});
+            const decorMatDark = new THREE.MeshStandardMaterial({color:0x3a2818,roughness:0.9,metalness:0.05});
+            const metalMat = new THREE.MeshStandardMaterial({color:0x8a7a6a,roughness:0.4,metalness:0.7});
+            const glassMat = new THREE.MeshStandardMaterial({color:0x8899aa,roughness:0.1,metalness:0.9,transparent:true,opacity:0.3});
+            
+            // ===== ВЕЛИКЕ ЛІЖКО (збоку кімнати) =====
+            const bedGroup = new THREE.Group();
+            
+            // Рама ліжка
+            const frameMat = new THREE.MeshStandardMaterial({color:0x5a4030,roughness:0.7,metalness:0.05});
+            // Основа ліжка
+            const base = new THREE.Mesh(new THREE.BoxGeometry(1.8, 0.25, 2.0), frameMat);
+            base.position.set(0, 0.125, 0);
+            bedGroup.add(base);
+            // Матрац
+            const mattressMat = new THREE.MeshStandardMaterial({color:0x4a3a3a,roughness:0.95,metalness:0});
+            const mattress = new THREE.Mesh(new THREE.BoxGeometry(1.7, 0.15, 1.9), mattressMat);
+            mattress.position.set(0, 0.3, 0);
+            bedGroup.add(mattress);
+            // Простирадло
+            const sheetMat = new THREE.MeshStandardMaterial({color:0x6a5a4a,roughness:0.9,metalness:0});
+            const sheet = new THREE.Mesh(new THREE.BoxGeometry(1.7, 0.02, 1.9), sheetMat);
+            sheet.position.set(0, 0.4, 0);
+            bedGroup.add(sheet);
+            // Подушка
+            const pillowMat = new THREE.MeshStandardMaterial({color:0x7a6a5a,roughness:0.95,metalness:0});
+            const pillow = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.12, 0.4), pillowMat);
+            pillow.position.set(0.5, 0.5, 0.4);
+            bedGroup.add(pillow);
+            // Ковдра (складена)
+            const blanketMat = new THREE.MeshStandardMaterial({color:0x4a3a2a,roughness:0.9,metalness:0});
+            const blanket = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.04, 0.6), blanketMat);
+            blanket.position.set(-0.3, 0.5, -0.5);
+            bedGroup.add(blanket);
+            // Ніжки ліжка
+            for (let x of [-0.85, 0.85]) {
+                for (let z of [-0.95, 0.95]) {
+                    const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.04, 0.15, 6), decorMat);
+                    leg.position.set(x, 0.08, z);
+                    bedGroup.add(leg);
+                }
+            }
+            
+            bedGroup.position.set(-0.5, 0, -1.5);
+            bedGroup.userData.decorType = 'bed';
+            scene.add(bedGroup);
+            roomDecor.push(bedGroup);
+            
+            // ===== ТУМБА ЛІВА (праворуч від ліжка, біля стіни) =====
+            const nightstandLeft = new THREE.Group();
+            // Корпус
+            const nsMat = new THREE.MeshStandardMaterial({color:0x5a4030,roughness:0.7,metalness:0.05});
+            const nsBody = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.5, 0.5), nsMat);
+            nsBody.position.y = 0.25;
+            nightstandLeft.add(nsBody);
+            // Стільниця
+            const topMat = new THREE.MeshStandardMaterial({color:0x6a5a4a,roughness:0.6,metalness:0.1});
+            const top = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.04, 0.55), topMat);
+            top.position.y = 0.52;
+            nightstandLeft.add(top);
+            // Ніжки
+            for (let x of [-0.22, 0.22]) {
+                for (let z of [-0.22, 0.22]) {
+                    const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.015, 0.02, 0.05, 4), decorMat);
+                    leg.position.set(x, 0.025, z);
+                    nightstandLeft.add(leg);
+                }
+            }
+            // Ящик (ручка)
+            const handleMat = new THREE.MeshStandardMaterial({color:0x8a7a5a,roughness:0.5,metalness:0.5});
+            const handle = new THREE.Mesh(new THREE.SphereGeometry(0.03, 6, 6), handleMat);
+            handle.position.set(0, 0.2, 0.27);
+            nightstandLeft.add(handle);
+            
+            nightstandLeft.position.set(1.0, 0, -1.5);
+            nightstandLeft.userData.decorType = 'nightstand_left';
+            scene.add(nightstandLeft);
+            roomDecor.push(nightstandLeft);
+            
+            // ===== ТУМБА ПРАВА (ліворуч від ліжка) =====
+            const nightstandRight = new THREE.Group();
+            const nsBody2 = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.5, 0.5), nsMat);
+            nsBody2.position.y = 0.25;
+            nightstandRight.add(nsBody2);
+            const top2 = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.04, 0.55), topMat);
+            top2.position.y = 0.52;
+            nightstandRight.add(top2);
+            for (let x of [-0.22, 0.22]) {
+                for (let z of [-0.22, 0.22]) {
+                    const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.015, 0.02, 0.05, 4), decorMat);
+                    leg.position.set(x, 0.025, z);
+                    nightstandRight.add(leg);
+                }
+            }
+            const handle2 = new THREE.Mesh(new THREE.SphereGeometry(0.03, 6, 6), handleMat);
+            handle2.position.set(0, 0.2, 0.27);
+            nightstandRight.add(handle2);
+            
+            nightstandRight.position.set(-2.0, 0, -1.5);
+            nightstandRight.userData.decorType = 'nightstand_right';
+            scene.add(nightstandRight);
+            roomDecor.push(nightstandRight);
+            
+            // ===== НАСТІЛЬНА ЛАМПА НА ЛІВІЙ ТУМБІ =====
+            const lampLeftGroup = new THREE.Group();
+            // Основа лампи
+            const lampBaseMat = new THREE.MeshStandardMaterial({color:0x8a7a5a,roughness:0.5,metalness:0.4});
+            const lampBase = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.1, 0.03, 10), lampBaseMat);
+            lampBase.position.y = 0.02;
+            lampLeftGroup.add(lampBase);
+            // Стояк
+            const lampStemMat = new THREE.MeshStandardMaterial({color:0x6a5a4a,roughness:0.5,metalness:0.5});
+            const lampStem = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.025, 0.15, 6), lampStemMat);
+            lampStem.position.y = 0.1;
+            lampLeftGroup.add(lampStem);
+            // Абажур (конус)
+            const lampShadeMat = new THREE.MeshStandardMaterial({color:0x4a3a2a,roughness:0.7,metalness:0.05,emissive:0x332211,emissiveIntensity:0.1});
+            const lampShade = new THREE.Mesh(new THREE.ConeGeometry(0.12, 0.12, 10), lampShadeMat);
+            lampShade.position.y = 0.18;
+            lampLeftGroup.add(lampShade);
+            // Лампочка (світіння)
+            const lampBulbMat = new THREE.MeshBasicMaterial({color:0xffdd88,transparent:true,opacity:0.6});
+            const lampBulb = new THREE.Mesh(new THREE.SphereGeometry(0.03, 6, 6), lampBulbMat);
+            lampBulb.position.y = 0.14;
+            lampLeftGroup.add(lampBulb);
+            
+            lampLeftGroup.position.set(1.0, 0.55, -1.5);
+            lampLeftGroup.userData.decorType = 'lamp_left';
+            scene.add(lampLeftGroup);
+            roomDecor.push(lampLeftGroup);
+            
+            // ===== НАСТІЛЬНА ЛАМПА НА ПРАВІЙ ТУМБІ =====
+            const lampRightGroup = new THREE.Group();
+            const lampBase2 = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.1, 0.03, 10), lampBaseMat);
+            lampBase2.position.y = 0.02;
+            lampRightGroup.add(lampBase2);
+            const lampStem2 = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.025, 0.15, 6), lampStemMat);
+            lampStem2.position.y = 0.1;
+            lampRightGroup.add(lampStem2);
+            const lampShade2 = new THREE.Mesh(new THREE.ConeGeometry(0.12, 0.12, 10), lampShadeMat);
+            lampShade2.position.y = 0.18;
+            lampRightGroup.add(lampShade2);
+            const lampBulb2 = new THREE.Mesh(new THREE.SphereGeometry(0.03, 6, 6), lampBulbMat);
+            lampBulb2.position.y = 0.14;
+            lampRightGroup.add(lampBulb2);
+            
+            lampRightGroup.position.set(-2.0, 0.55, -1.5);
+            lampRightGroup.userData.decorType = 'lamp_right';
+            scene.add(lampRightGroup);
+            roomDecor.push(lampRightGroup);
+            
+            // ===== ШАФА В КУТКУ =====
+            const wardrobe = new THREE.Group();
+            const wardMat = new THREE.MeshStandardMaterial({color:0x4a3520,roughness:0.8,metalness:0.05});
+            const wardMatLight = new THREE.MeshStandardMaterial({color:0x5a4530,roughness:0.7,metalness:0.05});
+            // Корпус
+            const wardBody = new THREE.Mesh(new THREE.BoxGeometry(0.8, 2.0, 0.6), wardMat);
+            wardBody.position.y = 1.0;
+            wardrobe.add(wardBody);
+            // Двері ліва
+            const doorL = new THREE.Mesh(new THREE.BoxGeometry(0.38, 1.8, 0.03), wardMatLight);
+            doorL.position.set(-0.2, 1.0, 0.32);
+            wardrobe.add(doorL);
+            // Двері права
+            const doorR = new THREE.Mesh(new THREE.BoxGeometry(0.38, 1.8, 0.03), wardMatLight);
+            doorR.position.set(0.2, 1.0, 0.32);
+            wardrobe.add(doorR);
+            // Ручки (використовуємо handleMat з тумб)
+            const hL = new THREE.Mesh(new THREE.SphereGeometry(0.03, 6, 6), handleMat);
+            hL.position.set(-0.2, 1.0, 0.35);
+            wardrobe.add(hL);
+            const hR = new THREE.Mesh(new THREE.SphereGeometry(0.03, 6, 6), handleMat);
+            hR.position.set(0.2, 1.0, 0.35);
+            wardrobe.add(hR);
+            // Верхня панель
+            const topPanel = new THREE.Mesh(new THREE.BoxGeometry(0.85, 0.04, 0.65), wardMatLight);
+            topPanel.position.set(0, 2.02, 0);
+            wardrobe.add(topPanel);
+            // Ніжки
+            for (let x of [-0.35, 0.35]) {
+                for (let z of [-0.25, 0.25]) {
+                    const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.025, 0.05, 4), wardMat);
+                    leg.position.set(x, 0.025, z);
+                    wardrobe.add(leg);
+                }
+            }
+            
+            wardrobe.position.set(2.0, 0, 1.8);
+            wardrobe.rotation.y = Math.PI;
+
+            wardrobe.userData.decorType = 'wardrobe';
+            scene.add(wardrobe);
+            roomDecor.push(wardrobe);
+            
+            // Створюємо телевізор на стіні
+            createTV();
+        }
+
+        
+        function removeAllOfType(type) {
+            // Видаляємо всі декорації заданого типу
+            const toRemove = roomDecor.filter(m => m.userData && m.userData.decorType === type);
+            toRemove.forEach(m => { scene.remove(m); });
+            roomDecor = roomDecor.filter(m => !(m.userData && m.userData.decorType === type));
+        }
+        
+        function removeRandomDecor(excludeType) {
+            // Знаходимо всі декорації заданого типу
+            const candidates = roomDecor.filter(m => m.userData && m.userData.decorType === excludeType);
+            if (candidates.length === 0) return null;
+            const idx = Math.floor(Math.random() * candidates.length);
+            const decor = candidates[idx];
+            scene.remove(decor);
+            roomDecor = roomDecor.filter(m => m !== decor);
+            return decor;
+        }
+        
+        let S = {level:0,hasAnom:false,anomType:null,anomData:null,anomIdx:0,
+                 levelResult:null,choices:[],pos:'center',
+                 endless:false,endlessLvl:0,endlessTotal:0,endlessUnl:false,
+                 showHints:false,hp:100,maxHp:100,hintsAvailable:1,hintsUsedBlock:0};
+
+        
+        // Аудіо
+        let audioCtx=null;
+        function initAudio(){if(!audioCtx)audioCtx=new(window.AudioContext||window.webkitAudioContext)();}
+        function tone(f,d,t='sine',v=0.03){try{initAudio();const o=audioCtx.createOscillator(),g=audioCtx.createGain();o.type=t;o.frequency.setValueAtTime(f,audioCtx.currentTime);g.gain.setValueAtTime(v,audioCtx.currentTime);g.gain.exponentialRampToValueAtTime(0.001,audioCtx.currentTime+d);o.connect(g);g.connect(audioCtx.destination);o.start();o.stop(audioCtx.currentTime+d);}catch(e){}}
+        function sfxSuc(){tone(523,0.12);setTimeout(()=>tone(659,0.12),120);setTimeout(()=>tone(784,0.25),240);}
+        function sfxFail(){tone(180,0.4,'sawtooth',0.04);setTimeout(()=>tone(130,0.5,'sawtooth',0.02),200);}
+        function sfxAnom(){for(let i=0;i<6;i++)setTimeout(()=>tone(200+Math.random()*300,0.06,'sawtooth',0.02),i*70);}
+        function sfxWalk(){tone(55,0.06,'sine',0.02);}
+        
+        (function(){const c=document.getElementById('dustContainer');for(let i=0;i<12;i++){const d=document.createElement('div');d.className='dust';d.style.left=Math.random()*100+'%';d.style.animationDuration=(15+Math.random()*25)+'s';d.style.animationDelay=Math.random()*20+'s';c.appendChild(d);}})();
+        
+        function showScene(id){document.querySelectorAll('.scene').forEach(s=>s.classList.remove('active'));document.getElementById(id).classList.add('active');}
+        
+        // =================== THREE.JS 3D РЕНДЕРИНГ ===================
+        const container = document.getElementById('three-container');
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x000000);
+        scene.fog = new THREE.Fog(0x000000, 8, 14);
+        
+        const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 20);
+        camera.position.set(0, 1.6, 0);
+        
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        renderer.toneMappingExposure = 0.8;
+        container.appendChild(renderer.domElement);
+        
+        // ===== СТВОРЕННЯ КІМНАТИ (менша кімната) =====
+        const ROOM_SIZE = 5;
+        const ROOM_HEIGHT = 2.8;
+        const HALF = ROOM_SIZE / 2;
+        
+        const wallMat = new THREE.MeshStandardMaterial({
+            color: 0x5a3a28,
+            roughness: 0.85,
+            metalness: 0.05,
+            side: THREE.DoubleSide,
+            emissive: 0x2a1810,
+            emissiveIntensity: 0.25
+        });
+        
+        const frontWallMat = new THREE.MeshStandardMaterial({
+            color: 0x5a4030,
+            roughness: 0.85,
+            metalness: 0.05,
+            side: THREE.DoubleSide,
+            emissive: 0x2a1a10,
+            emissiveIntensity: 0.2
+        });
+        
+        const floorMat = new THREE.MeshStandardMaterial({
+            color: 0x3a2210,
+            roughness: 0.95,
+            metalness: 0.0,
+            side: THREE.DoubleSide,
+            emissive: 0x1a0e06,
+            emissiveIntensity: 0.15
+        });
+        
+        const ceilMat = new THREE.MeshStandardMaterial({
+            color: 0x3a2a1a,
+            roughness: 0.9,
+            metalness: 0.0,
+            side: THREE.DoubleSide,
+            emissive: 0x1a1008,
+            emissiveIntensity: 0.3
+        });
+
+
+        
+        const floor = new THREE.Mesh(new THREE.PlaneGeometry(ROOM_SIZE, ROOM_SIZE), floorMat);
+        floor.rotation.x = -Math.PI / 2;
+        floor.position.y = 0;
+        floor.receiveShadow = true;
+        scene.add(floor);
+        
+        const ceil = new THREE.Mesh(new THREE.PlaneGeometry(ROOM_SIZE, ROOM_SIZE), ceilMat);
+        ceil.rotation.x = Math.PI / 2;
+        ceil.position.y = ROOM_HEIGHT;
+        scene.add(ceil);
+        
+        const wallGeo = new THREE.PlaneGeometry(ROOM_SIZE, ROOM_HEIGHT);
+        const walls = [];
+        function createWall(pos, rot, isFront) {
+            const m = isFront ? frontWallMat.clone() : wallMat.clone();
+            const wall = new THREE.Mesh(wallGeo, m);
+
+            wall.position.set(pos.x, ROOM_HEIGHT/2, pos.z);
+            wall.rotation.y = rot;
+            wall.receiveShadow = true;
+            scene.add(wall);
+            return wall;
+        }
+        
+        createWall(new THREE.Vector3(0, 0, -HALF), 0, true);
+        createWall(new THREE.Vector3(0, 0, HALF), Math.PI, false);
+        createWall(new THREE.Vector3(-HALF, 0, 0), Math.PI/2, false);
+        createWall(new THREE.Vector3(HALF, 0, 0), -Math.PI/2, false);
+        
+        function addWallDetails() {
+            // Панелі на стінах (декоративні прямокутники)
+            const panelMat = new THREE.LineBasicMaterial({ color: 0x1a100a, transparent: true, opacity: 0.12 });
+            const panelMat2 = new THREE.LineBasicMaterial({ color: 0x3a2818, transparent: true, opacity: 0.06 });
+            
+            const wallConfigs = [
+                { axis: 'z', val: -HALF + 0.005, u: 'x', v: 'y', normal: 'z', rotY: 0 },
+                { axis: 'z', val: HALF - 0.005, u: 'x', v: 'y', normal: 'z', rotY: Math.PI },
+                { axis: 'x', val: -HALF + 0.005, u: 'z', v: 'y', normal: 'x', rotY: Math.PI / 2 },
+                { axis: 'x', val: HALF - 0.005, u: 'z', v: 'y', normal: 'x', rotY: -Math.PI / 2 },
+            ];
+            
+            wallConfigs.forEach(cfg => {
+                // Вертикальні лінії панелей
+                for (let i = 1; i < 6; i++) {
+                    const pts = [];
+                    const t = (i / 6) * ROOM_SIZE - HALF;
+                    for (let j = 0; j <= 8; j++) {
+                        const v = (j / 8) * ROOM_HEIGHT;
+                        const x = cfg.u === 'x' ? t + (Math.sin(i+j)*0.015) : cfg.val;
+                        const z = cfg.u === 'z' ? t + (Math.sin(i+j)*0.015) : cfg.val;
+                        pts.push(cfg.normal === 'z' 
+                            ? new THREE.Vector3(x, v, z)
+                            : new THREE.Vector3(x, v, z));
+                    }
+                    const geo = new THREE.BufferGeometry().setFromPoints(pts);
+                    const line = new THREE.Line(geo, panelMat2);
+                    scene.add(line);
+                }
+                
+                // Горизонтальні лінії панелей
+                for (let i = 1; i < 4; i++) {
+                    const pts = [];
+                    const v = (i / 4) * ROOM_HEIGHT;
+                    for (let j = 0; j <= 12; j++) {
+                        const t = (j / 12) * ROOM_SIZE - HALF;
+                        const x = cfg.u === 'x' ? t + (Math.sin(i+j)*0.015) : cfg.val;
+                        const z = cfg.u === 'z' ? t + (Math.sin(i+j)*0.015) : cfg.val;
+                        pts.push(cfg.normal === 'z'
+                            ? new THREE.Vector3(x, v, z)
+                            : new THREE.Vector3(x, v, z));
+                    }
+                    const geo = new THREE.BufferGeometry().setFromPoints(pts);
+                    const line = new THREE.Line(geo, panelMat2);
+                    scene.add(line);
+                }
+            });
+            
+            // ПЛІНТУСИ (нижній край стін)
+            const trimMat = new THREE.MeshStandardMaterial({
+                color: 0x3a2818, roughness: 0.9, metalness: 0.05
+            });
+            const trimMat2 = new THREE.MeshStandardMaterial({
+                color: 0x2a1a10, roughness: 0.9, metalness: 0.05
+            });
+            
+            const trimHeight = 0.08;
+            const trimDepth = 0.04;
+            
+            const wallEdges = [
+                { x: 0, z: -HALF + 0.005, w: ROOM_SIZE, h: trimHeight, rot: 0 },
+                { x: 0, z: HALF - 0.005, w: ROOM_SIZE, h: trimHeight, rot: 0 },
+                { x: -HALF + 0.005, z: 0, w: ROOM_SIZE, h: trimHeight, rot: Math.PI / 2 },
+                { x: HALF - 0.005, z: 0, w: ROOM_SIZE, h: trimHeight, rot: Math.PI / 2 },
+            ];
+            
+            wallEdges.forEach(e => {
+                const trim = new THREE.Mesh(new THREE.BoxGeometry(e.w, e.h, trimDepth), trimMat);
+                trim.position.set(e.x, trimHeight / 2, e.z);
+                trim.rotation.y = e.rot;
+                scene.add(trim);
+                
+                // Верхня частина плінтуса (тонкий виступ)
+                const trimTop = new THREE.Mesh(new THREE.BoxGeometry(e.w, 0.02, trimDepth + 0.01), trimMat2);
+                trimTop.position.set(e.x, trimHeight + 0.01, e.z);
+                trimTop.rotation.y = e.rot;
+                scene.add(trimTop);
+            });
+            
+            // КАРНИЗИ (верхній край стін біля стелі)
+            const crownMat = new THREE.MeshStandardMaterial({
+                color: 0x2a1a10, roughness: 0.85, metalness: 0.05
+            });
+            const crownMat2 = new THREE.MeshStandardMaterial({
+                color: 0x1a0e08, roughness: 0.9, metalness: 0.05
+            });
+            
+            const crownH = 0.06;
+            const crownD = 0.06;
+            
+            wallEdges.forEach(e => {
+                const crown = new THREE.Mesh(new THREE.BoxGeometry(e.w, crownH, crownD), crownMat);
+                crown.position.set(e.x, ROOM_HEIGHT - crownH / 2, e.z);
+                crown.rotation.y = e.rot;
+                scene.add(crown);
+                
+                // Нижня частина карниза
+                const crownLow = new THREE.Mesh(new THREE.BoxGeometry(e.w, 0.02, crownD + 0.01), crownMat2);
+                crownLow.position.set(e.x, ROOM_HEIGHT - crownH - 0.01, e.z);
+                crownLow.rotation.y = e.rot;
+                scene.add(crownLow);
+            });
+            
+            // СТЕЛЬОВІ БАЛКИ (декоративні)
+            const beamMat = new THREE.MeshStandardMaterial({
+                color: 0x1a100a, roughness: 0.9, metalness: 0.05
+            });
+            const beamMatSide = new THREE.MeshStandardMaterial({
+                color: 0x0e0806, roughness: 0.95, metalness: 0.0
+            });
+            
+            // Поздовжні балки
+            for (let i = -1; i <= 1; i += 1) {
+                const bMat = new THREE.MeshStandardMaterial({
+                    color: 0x1a100a, roughness: 0.9, metalness: 0.05
+                });
+                const beam = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.04, ROOM_SIZE * 0.9), bMat);
+                beam.position.set(i * 1.2, ROOM_HEIGHT - 0.02, 0);
+                scene.add(beam);
+            }
+            
+            // Поперечні балки
+            for (let i = -1; i <= 1; i += 1) {
+                const beam = new THREE.Mesh(new THREE.BoxGeometry(ROOM_SIZE * 0.9, 0.04, 0.06), beamMat);
+                beam.position.set(0, ROOM_HEIGHT - 0.02, i * 1.2);
+                scene.add(beam);
+            }
+            
+            // СТЕЛЬОВА ТЕКСТУРА (тонкі лінії імітують шви)
+            const ceilLineMat = new THREE.LineBasicMaterial({ color: 0x0a0604, transparent: true, opacity: 0.1 });
+            for (let i = -6; i <= 6; i++) {
+                const pts = [];
+                const t = (i / 6) * HALF;
+                for (let j = -6; j <= 6; j++) {
+                    const u = (j / 6) * HALF;
+                    pts.push(new THREE.Vector3(t + (Math.sin(i+j)*0.005), ROOM_HEIGHT - 0.001, u));
+                }
+                const geo = new THREE.BufferGeometry().setFromPoints(pts);
+                const line = new THREE.Line(geo, ceilLineMat);
+                scene.add(line);
+            }
+            for (let i = -6; i <= 6; i++) {
+                const pts = [];
+                const t = (i / 6) * HALF;
+                for (let j = -6; j <= 6; j++) {
+                    const u = (j / 6) * HALF;
+                    pts.push(new THREE.Vector3(u, ROOM_HEIGHT - 0.001, t + (Math.sin(i+j)*0.005)));
+                }
+                const geo = new THREE.BufferGeometry().setFromPoints(pts);
+                const line = new THREE.Line(geo, ceilLineMat);
+                scene.add(line);
+            }
+            
+            // КУТКОВІ СТИКИ (вертикальні лінії в кутах кімнати)
+            const cornerMat = new THREE.LineBasicMaterial({ color: 0x0a0604, transparent: true, opacity: 0.2 });
+            const corners = [
+                { x: -HALF, z: -HALF },
+                { x: -HALF, z: HALF },
+                { x: HALF, z: -HALF },
+                { x: HALF, z: HALF }
+            ];
+            corners.forEach(c => {
+                const pts = [
+                    new THREE.Vector3(c.x, 0, c.z),
+                    new THREE.Vector3(c.x, ROOM_HEIGHT, c.z)
+                ];
+                const geo = new THREE.BufferGeometry().setFromPoints(pts);
+                const line = new THREE.Line(geo, cornerMat);
+                scene.add(line);
+            });
+        }
+        addWallDetails();
+
+        
+        // ===== ДВЕРІ =====
+        const doorMeshes = [];
+        const doorGlows = [];
+        
+        function createDoor(x, z, rotY) {
+            const doorGroup = new THREE.Group();
+            const frameMat = new THREE.MeshStandardMaterial({color: 0x3a2818,roughness: 0.8,metalness: 0.1});
+            const frame = new THREE.Mesh(new THREE.BoxGeometry(1.1, 2.2, 0.08), frameMat);
+            doorGroup.add(frame);
+            const doorMat = new THREE.MeshStandardMaterial({color: 0x4a3020,roughness: 0.9,metalness: 0.05});
+            const door = new THREE.Mesh(new THREE.BoxGeometry(0.9, 1.9, 0.06), doorMat);
+            door.position.y = 0.05;
+            doorGroup.add(door);
+            const handleMat = new THREE.MeshStandardMaterial({color: 0x8a7040,roughness: 0.5,metalness: 0.7});
+            const handle = new THREE.Mesh(new THREE.SphereGeometry(0.06, 8, 8), handleMat);
+            handle.position.set(0.35, 0.0, 0.05);
+            doorGroup.add(handle);
+            doorGroup.position.set(x, 0.5, z);
+            doorGroup.rotation.y = rotY;
+            scene.add(doorGroup);
+            
+            const glowGeo = new THREE.RingGeometry(0.4, 0.8, 16);
+            const glowMat = new THREE.MeshBasicMaterial({color: 0xff0000,transparent: true,opacity: 0,side: THREE.DoubleSide,depthWrite: false});
+            const glow = new THREE.Mesh(glowGeo, glowMat);
+            glow.position.set(x, 1.5, z);
+            glow.rotation.x = -Math.PI / 2;
+            scene.add(glow);
+            
+            doorMeshes.push({ group: doorGroup, x, z, glow });
+            return doorGroup;
+        }
+        
+        // Тільки задня двері (передня біля ліжка — прибрана)
+        const doorPositions = [
+            { x: 0, z: HALF - 0.01, rot: Math.PI },
+        ];
+        doorPositions.forEach(p => createDoor(p.x, p.z, p.rot));
+
+        
+        // ===== ОСВІТЛЕННЯ =====
+        function createCeilingLight(x, z, color, intensity) {
+            const group = new THREE.Group();
+            const shadeMat = new THREE.MeshStandardMaterial({color: 0xccc8c0,roughness: 0.7,metalness: 0.3,transparent: true,opacity: 0.6,emissive: 0x555050,emissiveIntensity: 0.05});
+            const shade = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.25, 0.15, 12), shadeMat);
+            shade.position.y = 0;
+            group.add(shade);
+            const bulbMat = new THREE.MeshBasicMaterial({color: 0xffeedd,transparent: true,opacity: 0.7});
+            const bulb = new THREE.Mesh(new THREE.SphereGeometry(0.08, 8, 8), bulbMat);
+            bulb.position.y = -0.02;
+            group.add(bulb);
+            const glowMat = new THREE.MeshBasicMaterial({color: 0xffeedd,transparent: true,opacity: 0.1,side: THREE.DoubleSide,depthWrite: false});
+            const glow = new THREE.Mesh(new THREE.SphereGeometry(0.2, 12, 12), glowMat);
+            glow.position.y = -0.02;
+            group.add(glow);
+            const wireMat = new THREE.MeshStandardMaterial({color: 0x333333,roughness: 0.9,metalness: 0.1});
+            const wire = new THREE.Mesh(new THREE.CylinderGeometry(0.01, 0.01, 0.15, 4), wireMat);
+            wire.position.y = 0.1;
+            group.add(wire);
+            group.position.set(x, ROOM_HEIGHT - 0.05, z);
+            scene.add(group);
+            const light = new THREE.PointLight(color || 0xffeedd, intensity || 1.2, 8);
+            light.position.set(x, ROOM_HEIGHT - 0.3, z);
+            light.castShadow = true;
+            light.shadow.mapSize.width = 512;
+            light.shadow.mapSize.height = 512;
+            scene.add(light);
+            return { group, bulb, glow, light };
+        }
+        
+        const lamp1 = createCeilingLight(-2.5, -2.5, 0xffeedd, 2.8);
+        const lamp2 = createCeilingLight(2.5, 2.5, 0xeeccaa, 2.4);
+        
+        const ambient = new THREE.AmbientLight(0x332211, 0.15);
+        scene.add(ambient);
+        const moonLight = new THREE.DirectionalLight(0x445566, 0.04);
+        moonLight.position.set(0, 5, 0);
+        scene.add(moonLight);
+        const fillLight = new THREE.DirectionalLight(0x664422, 0.08);
+        fillLight.position.set(0, 1, 0);
+        scene.add(fillLight);
+        
+        // ===== ЛІХТАРИК =====
+        const flashlightSpot = new THREE.SpotLight(0xffffee, 0, 20, Math.PI / 8, 0.3, 1.0);
+        flashlightSpot.position.set(0, 1.6, 0);
+        flashlightSpot.target.position.set(0, 1.6, -5);
+        flashlightSpot.castShadow = true;
+        flashlightSpot.shadow.mapSize.width = 512;
+        flashlightSpot.shadow.mapSize.height = 512;
+        scene.add(flashlightSpot);
+        scene.add(flashlightSpot.target);
+        
+        const flashlight = {
+            on: false,
+            spot: flashlightSpot,
+            toggle() {
+                this.on = !this.on;
+                this.spot.intensity = this.on ? 80 : 0;
+                const ind = document.getElementById('flashlight-indicator');
+                if (ind) {
+                    ind.textContent = this.on ? '🔦' : '🌑';
+                    ind.style.opacity = this.on ? '1' : '0.3';
+                }
+                if (this.on) { try { tone(800, 0.08); } catch(e) {} }
+                // Надіслати стан ліхтарика в мультиплеєрі
+                if (mp.connected) { mp.send({ type: 'flashlight', on: this.on }); }
+            }
+        };
+        
+        // ===== МУЛЬТИПЛЕЄР (PeerJS) =====
+        const mp = {
+            peer: null,
+            conn: null,
+            isHost: false,
+            code: null,
+            connected: false,
+            partnerId: null,
+            partnerData: null,
+            myVote: null,
+            partnerVote: null,
+            avatarGroup: null,
+            avatarLight: null,
+            syncTimer: 0,
+            
+            // Створити кімнату
+            createRoom() {
+                if (this.peer) this.destroy();
+                const status = document.getElementById('mp-status');
+                const display = document.getElementById('mp-code-display');
+                status.textContent = '🔑 Створення кімнати...';
+                status.className = '';
+                
+                // Генеруємо 4-цифровий код
+                this.code = String(Math.floor(1000 + Math.random() * 9000));
+                display.textContent = '⏳';
+                
+                try {
+                    this.peer = new Peer(`es-${this.code}`, {
+                        debug: 0,
+                        config: { 'iceServers': [
+                            { urls: 'stun:stun.l.google.com:19302' },
+                            { urls: 'stun:stun1.l.google.com:19302' }
+                        ]}
+                    });
+                    
+                    this.peer.on('open', (id) => {
+                        this.isHost = true;
+                        this.partnerId = null;
+                        this.partnerData = null;
+                        status.textContent = '✅ Кімната створена! Поділіться кодом:';
+                        status.className = 'connected';
+                        display.textContent = this.code;
+                        document.getElementById('mp-players').innerHTML = '<span class="mp-avatar-indicator online"></span> Ви (очікування друга...)';
+                        
+                        this.peer.on('connection', (conn) => {
+                            this.conn = conn;
+                            this.connected = true;
+                            this.partnerId = conn.peer;
+                            conn.on('data', (data) => this.onMessage(data));
+                            conn.on('close', () => this.onDisconnect());
+                            status.textContent = '🎮 Друг приєднався!';
+                            status.className = 'connected';
+                            document.getElementById('mp-players').innerHTML = '<span class="mp-avatar-indicator online"></span> Ви + <span class="mp-avatar-indicator online"></span> Друг';
+                            this.send({ type: 'state', level: S.level, hasAnom: S.hasAnom, anomType: S.anomType, anomIdx: S.anomIdx });
+                            // Автостарт для обох
+                            if (document.getElementById('game-scene').classList.contains('active')) {
+                                this.send({ type: 'start' });
+                            }
+                        });
+                    });
+                    
+                    this.peer.on('error', (err) => {
+                        if (err.type === 'unavailable-id') {
+                            status.textContent = '❌ Код зайнятий, спробуйте ще раз';
+                            status.className = 'error';
+                            display.textContent = '';
+                            this.destroy();
+                        } else {
+                            status.textContent = '❌ Помилка: ' + err.message;
+                            status.className = 'error';
+                        }
+                    });
+                } catch(e) {
+                    status.textContent = '❌ Помилка створення кімнати';
+                    status.className = 'error';
+                }
+            },
+            
+            // Приєднатися до кімнати
+            joinRoom() {
+                const input = document.getElementById('mp-code-input');
+                const code = input.value.trim();
+                if (code.length !== 4 || !/^\d{4}$/.test(code)) {
+                    document.getElementById('mp-status').textContent = '❌ Введіть 4 цифри';
+                    document.getElementById('mp-status').className = 'error';
+                    return;
+                }
+                if (this.peer) this.destroy();
+                
+                const status = document.getElementById('mp-status');
+                const display = document.getElementById('mp-code-display');
+                status.textContent = '🔗 Підключення до ' + code + '...';
+                status.className = '';
+                display.textContent = '';
+                
+                try {
+                    this.peer = new Peer(undefined, {
+                        debug: 0,
+                        config: { 'iceServers': [
+                            { urls: 'stun:stun.l.google.com:19302' },
+                            { urls: 'stun:stun1.l.google.com:19302' }
+                        ]}
+                    });
+                    
+                    this.peer.on('open', (id) => {
+                        this.isHost = false;
+                        this.code = code;
+                        const conn = this.peer.connect(`es-${code}`, { reliable: true });
+                        this.conn = conn;
+                        this.partnerId = `es-${code}`;
+                        
+                        conn.on('open', () => {
+                            this.connected = true;
+                            status.textContent = '🎮 Підключено!';
+                            status.className = 'connected';
+                            display.textContent = '🔗 ' + code;
+                            document.getElementById('mp-players').innerHTML = '<span class="mp-avatar-indicator online"></span> Ви + <span class="mp-avatar-indicator online"></span> Друг';
+                            this.send({ type: 'join_ack', id: id });
+                            
+                            // Автостарт, якщо хост вже грає
+                            if (S.level > 0 || document.getElementById('game-scene').classList.contains('active')) {
+                                // Хост вже грає, клієнт приєднується пізніше
+                            }
+                        });
+                        
+                        conn.on('data', (data) => this.onMessage(data));
+                        conn.on('close', () => this.onDisconnect());
+                    });
+                    
+                    this.peer.on('error', (err) => {
+                        status.textContent = '❌ Не вдалося підключитися: ' + err.message;
+                        status.className = 'error';
+                    });
+                } catch(e) {
+                    status.textContent = '❌ Помилка підключення';
+                    status.className = 'error';
+                }
+            },
+            
+            onMessage(data) {
+                if (!data || !data.type) return;
+                switch(data.type) {
+                    case 'pos':
+                        this.partnerData = data;
+                        break;
+                    case 'flashlight':
+                        if (this.partnerData) this.partnerData.flashlight = data.on;
+                        break;
+                    case 'state':
+                        // Синхронізуємо стан гри з хостом
+                        if (!this.isHost) {
+                            S.hasAnom = data.hasAnom;
+                            S.anomType = data.anomType;
+                            S.anomIdx = data.anomIdx;
+                            S.level = data.level || 0;
+                            setupLevel();
+                        }
+                        break;
+                    case 'start':
+                        if (!this.isHost && !document.getElementById('game-scene').classList.contains('active')) {
+                            startGame();
+                        }
+                        break;
+                    case 'vote':
+                        this.partnerVote = data.choice;
+                        const pv = document.getElementById('partner-vote');
+                        if (pv) {
+                            pv.textContent = '👤 Друг: ' + (data.choice === 'none' ? '🟢 Немає аномалії' : '🔴 Аномалія');
+                        }
+                        // Якщо хост — перевіряємо, чи обидва проголосували
+                        if (this.isHost && this.myVote !== null) {
+                            checkMultiplayerResult();
+                        }
+                        break;
+                    case 'result':
+                        if (!this.isHost) {
+                            // Клієнт отримує результат
+                            const box = document.getElementById('result-display');
+                            if (data.correct) {
+                                S.levelResult = 'success';
+                                box.innerHTML = '✅ Обидва праві!';
+                                box.className = 'result-display ok';
+                                sfxSuc();
+                                const fl = document.createElement('div'); fl.className = 'flash';
+                                document.body.appendChild(fl); setTimeout(()=>fl.remove(),500);
+                            } else {
+                                S.levelResult = 'fail';
+                                box.innerHTML = '💀 Спільна поразка...';
+                                box.className = 'result-display fail';
+                                sfxFail();
+                                const bl = document.createElement('div'); bl.className = 'blood-o';
+                                document.body.appendChild(bl); setTimeout(() => bl.remove(), 2000);
+                                document.getElementById('retryBtn').style.display = 'inline-block';
+                            }
+                            S.choices[S.endless ? 0 : S.level] = { dir: this.myVote || 'none', result: S.levelResult };
+                            updateDots();
+                            document.getElementById('btnSafe').disabled = true;
+                            document.getElementById('btnAnom').disabled = true;
+                        }
+                        break;
+                    case 'next_level':
+                        if (!this.isHost) {
+                            if (data.victory) {
+                                setTimeout(() => showFinal(true), 800);
+                            } else {
+                                S.level = data.level;
+                                setTimeout(() => setupLevel(), 300);
+                            }
+                        }
+                        break;
+                }
+            },
+            
+            onDisconnect() {
+                this.connected = false;
+                const status = document.getElementById('mp-status');
+                status.textContent = '❌ Друг відключився';
+                status.className = 'error';
+                document.getElementById('mp-players').innerHTML = '<span class="mp-avatar-indicator online"></span> Ви';
+                if (this.avatarGroup) {
+                    scene.remove(this.avatarGroup);
+                    this.avatarGroup = null;
+                }
+            },
+            
+            send(data) {
+                if (this.conn && this.conn.open) {
+                    try { this.conn.send(data); } catch(e) {}
+                }
+            },
+            
+            destroy() {
+                if (this.conn) { try { this.conn.close(); } catch(e) {} }
+                if (this.peer) { try { this.peer.destroy(); } catch(e) {} }
+                this.conn = null;
+                this.peer = null;
+                this.connected = false;
+                this.isHost = false;
+                this.code = null;
+                this.partnerData = null;
+                this.myVote = null;
+                this.partnerVote = null;
+                if (this.avatarGroup) {
+                    scene.remove(this.avatarGroup);
+                    this.avatarGroup = null;
+                    this.avatarLight = null;
+                }
+            },
+            
+            // Оновлення аватара
+            updateAvatar() {
+                if (!this.connected || !this.partnerData) {
+                    if (this.avatarGroup) {
+                        scene.remove(this.avatarGroup);
+                        this.avatarGroup = null;
+                        this.avatarLight = null;
+                    }
+                    return;
+                }
+                
+                if (!this.avatarGroup) {
+                    this.createAvatar();
+                }
+                
+                // Оновлюємо позицію аватара
+                const d = this.partnerData;
+                this.avatarGroup.position.set(d.x || 0, 0, d.z || 0);
+                this.avatarGroup.children.forEach(child => {
+                    if (child.userData.isBody) {
+                        child.position.y = 0.6;
+                        // Повертаємо тіло в напрямку погляду
+                        child.rotation.y = d.yaw || 0;
+                    }
+                    if (child.userData.isHead) {
+                        child.position.set(0, 1.3, 0);
+                    }
+                });
+                
+                if (this.avatarLight) {
+                    this.avatarLight.intensity = d.flashlight ? 40 : 8;
+                }
+            },
+            
+            createAvatar() {
+                this.avatarGroup = new THREE.Group();
+                
+                // Тіло
+                const bodyMat = new THREE.MeshStandardMaterial({
+                    color: 0x6a5a4a,
+                    roughness: 0.7,
+                    metalness: 0.1,
+                    emissive: 0x332211,
+                    emissiveIntensity: 0.3
+                });
+                const body = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.7, 0.2), bodyMat);
+                body.position.y = 0.6;
+                body.userData.isBody = true;
+                this.avatarGroup.add(body);
+                
+                // Голова
+                const headMat = new THREE.MeshStandardMaterial({
+                    color: 0x8a7a6a,
+                    roughness: 0.8,
+                    metalness: 0.0,
+                    emissive: 0x554433,
+                    emissiveIntensity: 0.2
+                });
+                const head = new THREE.Mesh(new THREE.SphereGeometry(0.13, 8, 8), headMat);
+                head.position.set(0, 1.3, 0);
+                head.userData.isHead = true;
+                this.avatarGroup.add(head);
+                
+                // Світіння навколо (що видно в темряві)
+                const glowMat = new THREE.MeshBasicMaterial({
+                    color: 0x88aaff,
+                    transparent: true,
+                    opacity: 0.08,
+                    side: THREE.DoubleSide,
+                    depthWrite: false
+                });
+                const glow = new THREE.Mesh(new THREE.SphereGeometry(0.5, 12, 12), glowMat);
+                glow.position.y = 0.8;
+                this.avatarGroup.add(glow);
+                
+                scene.add(this.avatarGroup);
+                
+                // Маленьке світло на аватарі
+                this.avatarLight = new THREE.PointLight(0x88aaff, 8, 3);
+                this.avatarLight.position.set(0, 1.0, 0);
+                this.avatarGroup.add(this.avatarLight);
+            },
+            
+            // Надіслати свою позицію
+            sendPosition() {
+                if (!this.connected) return;
+                this.send({
+                    type: 'pos',
+                    x: camera.position.x,
+                    z: camera.position.z,
+                    yaw: yaw,
+                    pitch: pitch,
+                    walking: isWalking,
+                    flashlight: flashlight.on
+                });
+            }
+        };
+        
+        // Функції для кнопок мультиплеєра
+        function mpCreate() {
+            mp.createRoom();
+        }
+        function mpJoin() {
+            mp.joinRoom();
+        }
+        
+        // ===== КЕРУВАННЯ =====
+        let yaw = 0;
+        let pitch = 0;
+        const PI_2 = Math.PI / 2;
+        const moveSpeed = 3.5;
+        const runSpeed = 5.5;
+        const sensitivity = 0.002;
+        const keys = { w: false, a: false, s: false, d: false, shift: false };
+        let isLocked = false;
+        const euler = new THREE.Euler(0, 0, 0, 'YXZ');
+        const halfPI = Math.PI / 2;
+        
+        let bobPhase = 0;
+        let isWalking = false;
+        let footstepTimer = 0;
+        
+        const crosshairEl = document.getElementById('crosshair');
+        const hintEl = document.getElementById('hint');
+        
+        container.addEventListener('click', () => {
+            if (S.levelResult) return;
+            if (!isLocked) {
+                renderer.domElement.requestPointerLock();
+            } else {
+                handleClick();
+            }
+        });
+        
+        document.addEventListener('pointerlockchange', () => {
+            isLocked = document.pointerLockElement === renderer.domElement;
+            crosshairEl.classList.toggle('locked', isLocked);
+            hintEl.style.opacity = isLocked ? '0' : '0.4';
+        });
+        
+        document.addEventListener('mousemove', (e) => {
+            if (!isLocked) return;
+            yaw -= e.movementX * sensitivity;
+            pitch -= e.movementY * sensitivity;
+            pitch = Math.max(-PI_2 * 0.8, Math.min(PI_2 * 0.8, pitch));
+        });
+        
+        document.addEventListener('keydown', (e) => {
+            const k = e.key.toLowerCase();
+            if (k === 'shift') { keys.shift = true; e.preventDefault(); return; }
+            if (k in keys) {
+                keys[k] = true;
+                e.preventDefault();
+                if (!isLocked && !S.levelResult) renderer.domElement.requestPointerLock();
+            }
+            if (e.key === 'Enter') {
+                const r = document.getElementById('retryBtn');
+                if (r.style.display !== 'none') { restartGame(); return; }
+            }
+            if (k === ' ' && isLocked) {
+                handleClick();
+                e.preventDefault();
+            }
+            if (k === '1') {
+                const b = document.getElementById('btnSafe');
+                if (!b.disabled) makeChoice('none');
+            }
+            if (k === '2') {
+                const b = document.getElementById('btnAnom');
+                if (!b.disabled) makeChoice('anom');
+            }
+            if (k === 'f') {
+                flashlight.toggle();
+                e.preventDefault();
+            }
+        });
+        
+        document.addEventListener('keyup', (e) => {
+            const k = e.key.toLowerCase();
+            if (k === 'shift') { keys.shift = false; e.preventDefault(); return; }
+            if (k in keys) { keys[k] = false; e.preventDefault(); }
+        });
+        
+        const raycaster = new THREE.Raycaster();
+        
+        let clickWalkTarget = null;
+        const clickWalkSpeed = 4.0;
+        const floorPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+        
+        function handleClick() {
+            if (S.levelResult) return;
+            
+            // Спочатку перевіряємо двері
+            raycaster.setFromCamera({ x: 0, y: 0 }, camera);
+            const doorIntersects = raycaster.intersectObjects(doorMeshes.map(d => d.group), true);
+            
+            if (doorIntersects.length > 0) {
+                const hit = doorIntersects[0].object;
+                const worldPos = new THREE.Vector3();
+                hit.getWorldPosition(worldPos);
+                
+                const toDoor = worldPos.clone().sub(camera.position);
+                const angle = Math.atan2(toDoor.x, toDoor.z);
+                const facing = yaw;
+                let diff = angle - facing;
+                while (diff > Math.PI) diff -= 2 * Math.PI;
+                while (diff < -Math.PI) diff += 2 * Math.PI;
+                
+                let dir;
+                if (Math.abs(diff) < Math.PI / 4) dir = 'forward';
+                else if (Math.abs(diff - Math.PI) < Math.PI / 4 || Math.abs(diff + Math.PI) < Math.PI / 4) dir = 'back';
+                else if (diff > 0) dir = 'right';
+                else dir = 'left';
+                
+                walkToDoor(dir);
+                return;
+            }
+            
+            // Якщо не двері — ходимо по підлозі
+            const floorIntersect = new THREE.Vector3();
+            raycaster.ray.intersectPlane(floorPlane, floorIntersect);
+            if (floorIntersect) {
+                const margin = 0.4;
+                const tx = Math.max(-HALF + margin, Math.min(HALF - margin, floorIntersect.x));
+                const tz = Math.max(-HALF + margin, Math.min(HALF - margin, floorIntersect.z));
+                clickWalkTarget = new THREE.Vector3(tx, 1.6, tz);
+                sfxWalk();
+            }
+        }
+        
+        function updateClickWalk(delta) {
+            if (!clickWalkTarget || S.levelResult || doorWalkDir) return;
+            
+            const toTarget = clickWalkTarget.clone().sub(camera.position);
+            const dist = toTarget.length();
+            
+            if (dist < 0.15) {
+                clickWalkTarget = null;
+                isWalking = false;
+                return;
+            }
+            
+            toTarget.y = 0;
+            toTarget.normalize();
+            
+            const speed = clickWalkSpeed * delta;
+            const step = Math.min(speed, dist);
+            camera.position.x += toTarget.x * step;
+            camera.position.z += toTarget.z * step;
+            
+            // Повертаємо камеру в напрямку руху
+            const targetYaw = Math.atan2(toTarget.x, toTarget.z);
+            let yawDiff = targetYaw - yaw;
+            while (yawDiff > Math.PI) yawDiff -= Math.PI * 2;
+            while (yawDiff < -Math.PI) yawDiff += Math.PI * 2;
+            yaw += yawDiff * delta * 4;
+            
+            isWalking = true;
+            bobPhase += delta * 9;
+            footstepTimer += delta;
+            if (footstepTimer > 0.55) { footstepTimer = 0; sfxWalk(); }
+        }
+        
+        let doorWalkTarget = null;
+        let doorWalkProgress = 0;
+        let doorWalkStart = null;
+        let doorWalkStartYaw = null;
+        let doorWalkDir = null;
+        
+        function walkToDoor(dir) {
+            if (S.levelResult || doorWalkDir) return;
+            const distances = {
+                forward: { x: 0, z: -2.8, yaw: 0 },
+                back: { x: 0, z: 2.8, yaw: Math.PI },
+                left: { x: -2.8, z: 0, yaw: Math.PI / 2 },
+                right: { x: 2.8, z: 0, yaw: -Math.PI / 2 }
+            };
+            const d = distances[dir];
+            if (!d) return;
+            
+            S.pos = dir;
+            sfxWalk();
+            
+            doorWalkTarget = new THREE.Vector3(d.x, 1.6, d.z);
+            doorWalkStart = camera.position.clone();
+            doorWalkStartYaw = yaw;
+            doorWalkDir = dir;
+            doorWalkProgress = 0;
+        }
+        
+        function updateMovement(delta) {
+            if (S.levelResult) { isWalking = false; return; }
+            if (doorWalkDir) {
+                doorWalkProgress += delta * 1.2;
+                if (doorWalkProgress >= 1) {
+                    doorWalkProgress = 1;
+                    camera.position.copy(doorWalkTarget);
+                    yaw = { forward: 0, back: Math.PI, left: Math.PI / 2, right: -Math.PI / 2 }[doorWalkDir];
+                    pitch = 0;
+                    doorWalkDir = null;
+                    
+                    const distToDoor = camera.position.distanceTo(doorWalkTarget);
+                    if (distToDoor < 0.5) {
+                        document.getElementById('hint').textContent = '[ 1 — чисто • 2 — аномалія ]';
+                        setTimeout(() => {
+                            document.getElementById('hint').textContent = '[ WASD — рух • Миша — огляд ]';
+                        }, 3000);
+                    }
+                } else {
+                    const t = doorWalkProgress;
+                    const ease = t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
+                    camera.position.lerpVectors(doorWalkStart, doorWalkTarget, ease);
+                    const targetYaw = { forward: 0, back: Math.PI, left: Math.PI / 2, right: -Math.PI / 2 }[doorWalkDir];
+                    yaw = doorWalkStartYaw + (targetYaw - doorWalkStartYaw) * ease;
+                    pitch = 0;
+                }
+                return;
+            }
+            
+            if (!isLocked) { isWalking = false; return; }
+            
+            const forward = new THREE.Vector3(0, 0, -1);
+            const right = new THREE.Vector3(1, 0, 0);
+            forward.applyAxisAngle(new THREE.Vector3(0, 1, 0), yaw);
+            right.applyAxisAngle(new THREE.Vector3(0, 1, 0), yaw);
+            
+            const speed = (keys.shift ? runSpeed : moveSpeed) * delta;
+            let moved = false;
+            
+            if (keys.w && !keys.s) {
+                camera.position.add(forward.clone().multiplyScalar(speed));
+                moved = true;
+            }
+            if (keys.s && !keys.w) {
+                camera.position.add(forward.clone().multiplyScalar(-speed * 0.8));
+                moved = true;
+            }
+            if (keys.a && !keys.d) {
+                camera.position.add(right.clone().multiplyScalar(-speed * 0.8));
+                moved = true;
+            }
+            if (keys.d && !keys.a) {
+                camera.position.add(right.clone().multiplyScalar(speed * 0.8));
+                moved = true;
+            }
+            
+            const margin = 0.3;
+            camera.position.x = Math.max(-HALF + margin, Math.min(HALF - margin, camera.position.x));
+            camera.position.z = Math.max(-HALF + margin, Math.min(HALF - margin, camera.position.z));
+            camera.position.y = 1.6;
+            
+            isWalking = moved;
+            if (moved) {
+                const bobSpeed = keys.shift ? 12 : 9;
+                bobPhase += delta * bobSpeed;
+                
+                footstepTimer += delta * (keys.shift ? 1.7 : 1.0);
+                if (footstepTimer > 0.55) {
+                    footstepTimer = 0;
+                    sfxWalk();
+                }
+                
+                const dir = new THREE.Vector3(camera.position.x, 0, camera.position.z);
+                const len = dir.length();
+                if (len > 2.0) {
+                    const angle = Math.atan2(dir.x, dir.z);
+                    let facing = yaw;
+                    let diff = angle - facing;
+                    while (diff > Math.PI) diff -= 2 * Math.PI;
+                    while (diff < -Math.PI) diff += 2 * Math.PI;
+                    
+                    if (Math.abs(diff) < Math.PI / 3) S.pos = 'forward';
+                    else if (Math.abs(diff - Math.PI) < Math.PI / 3 || Math.abs(diff + Math.PI) < Math.PI / 3) S.pos = 'back';
+                    else if (diff > 0) S.pos = 'right';
+                    else S.pos = 'left';
+                } else {
+                    S.pos = 'center';
+                }
+            } else {
+                footstepTimer = 0;
+                bobPhase = 0;
+            }
+        }
+        
+        function getBobOffset() {
+            if (!isWalking) return { x: 0, y: 0 };
+            return {
+                y: Math.sin(bobPhase) * 0.03,
+                x: Math.cos(bobPhase * 0.5) * 0.015
+            };
+        }
+        
+        // ===== АНОМАЛІЇ =====
+        let anomalyMeshes = [];
+        let dangerousAnoms = [];
+        
+        function clearAnomalies() {
+            anomalyMeshes.forEach(m => scene.remove(m));
+            anomalyMeshes = [];
+            dangerousAnoms = [];
+            // Також очищаємо зміщені та додані аномалії
+            displacedDecor.forEach(m => scene.remove(m));
+            displacedDecor = [];
+            addedDecor.forEach(m => scene.remove(m));
+            addedDecor = [];
+        }
+
+        
+        function spawnAnomaly() {
+            clearAnomalies();
+            if (!S.hasAnom) return;
+            
+            const isDangerous = S.level >= 2 && Math.random() < 0.35;
+            S.isDangerous = isDangerous;
+            
+            if (isDangerous) {
+                // НЕБЕЗПЕЧНА АНОМАЛІЯ
+                const dIdx = Math.floor(Math.random() * DANGEROUS_ANOM.length);
+                const dang = DANGEROUS_ANOM[dIdx];
+                
+                const ang = Math.random() * Math.PI * 2;
+                const rad = 1.5 + Math.random() * 2;
+                const dx = Math.cos(ang) * rad;
+                const dz = Math.sin(ang) * rad;
+                
+                const coreMat = new THREE.MeshStandardMaterial({
+                    color: dang.color, emissive: dang.emissive, emissiveIntensity: 1.5,
+                    roughness: 0.3, metalness: 0.1, transparent: true, opacity: 0.9
+                });
+                const core = new THREE.Mesh(new THREE.SphereGeometry(dang.size * 0.4, 16, 16), coreMat);
+                core.position.set(dx, 0.8 + Math.random() * 0.5, dz);
+                core.userData.isDangerous = true;
+                core.userData.damageRange = dang.damageRange;
+                core.userData.damageRate = dang.damageRate;
+                core.userData.dangerIdx = dIdx;
+                scene.add(core);
+                anomalyMeshes.push(core);
+                
+                const glowMat = new THREE.MeshBasicMaterial({
+                    color: dang.color, transparent: true, opacity: 0.15, side: THREE.DoubleSide, depthWrite: false
+                });
+                const glow = new THREE.Mesh(new THREE.SphereGeometry(dang.size * 0.9, 20, 20), glowMat);
+                glow.position.copy(core.position);
+                scene.add(glow);
+                anomalyMeshes.push(glow);
+                
+                for (let i = 0; i < 12; i++) {
+                    const pAng = (i / 12) * Math.PI * 2;
+                    const pRad = dang.size * 0.3 + Math.random() * 0.2;
+                    const pMat = new THREE.SpriteMaterial({
+                        map: createParticleTexture(dang.color), transparent: true,
+                        opacity: 0.6 + Math.random() * 0.4, blending: THREE.AdditiveBlending, depthWrite: false
+                    });
+                    const p = new THREE.Sprite(pMat);
+                    p.position.set(dx + Math.cos(pAng) * pRad, core.position.y + (Math.random() - 0.5) * 0.5, dz + Math.sin(pAng) * pRad);
+                    p.userData = { orbitCenter: core.position.clone(), orbitAngle: pAng, orbitSpeed: 1 + Math.random(), orbitRad: pRad, orbitHeight: core.position.y + (Math.random() - 0.5) * 0.5 };
+                    p.scale.set(0.08, 0.08, 1);
+                    scene.add(p);
+                    anomalyMeshes.push(p);
+                }
+                
+                for (let i = 0; i < 6; i++) {
+                    const fp = new THREE.Sprite(new THREE.SpriteMaterial({
+                        map: createParticleTexture(dang.color), transparent: true,
+                        opacity: 0.3, blending: THREE.AdditiveBlending, depthWrite: false
+                    }));
+                    fp.position.set(dx + (Math.random() - 0.5) * 0.3, core.position.y + 0.5 + Math.random() * 0.4, dz + (Math.random() - 0.5) * 0.3);
+                    fp.scale.set(0.1, 0.15, 1);
+                    fp.userData = { isTrail: true, basePos: fp.position.clone() };
+                    scene.add(fp);
+                    anomalyMeshes.push(fp);
+                }
+                
+                S.anomName = dang.name;
+                S.dangerPos = new THREE.Vector3(dx, 0, dz);
+                S.dangerRange = dang.damageRange;
+                dangerousAnoms.push({ pos: new THREE.Vector3(dx, 0, dz), range: dang.damageRange, rate: dang.damageRate, core });
+            }
+            // Більше немає старих OBJ_ANOM/WALL_ANOM — тільки аномалії предметів
+        }
+
+        
+        function createParticleTexture(color) {
+            const c = document.createElement('canvas'); c.width = 32; c.height = 32;
+            const cx = c.getContext('2d');
+            const grad = cx.createRadialGradient(16, 16, 0, 16, 16, 16);
+            const r = (color >> 16) & 0xff, g = (color >> 8) & 0xff, b = color & 0xff;
+            grad.addColorStop(0, `rgba(${r},${g},${b},1)`);
+            grad.addColorStop(0.3, `rgba(${r},${g},${b},0.6)`);
+            grad.addColorStop(1, `rgba(${r},${g},${b},0)`);
+            cx.fillStyle = grad; cx.fillRect(0, 0, 32, 32);
+            return new THREE.CanvasTexture(c);
+        }
+        
+        function updateDangerZones(delta) {
+            if (!S.hasAnom || S.levelResult) return;
+            
+            dangerousAnoms.forEach(d => {
+                const dx = camera.position.x - d.pos.x;
+                const dz = camera.position.z - d.pos.z;
+                const dist = Math.sqrt(dx * dx + dz * dz);
+                
+                if (dist < d.range) {
+                    // Шкода: чим ближче — тим сильніше
+                    const factor = 1 - (dist / d.range);
+                    S.hp -= d.rate * factor * delta * 60; // ~60 FPS
+                    
+                    // Ефект червоного кадру
+                    document.body.style.boxShadow = 'inset 0 0 50px rgba(200,50,0,' + (factor * 0.3) + ')';
+                    
+                    if (S.hp <= 0) {
+                        S.hp = 0;
+                        // Смерть від аномалії
+                        setTimeout(() => {
+                            if (!S.levelResult) {
+                                document.getElementById('result-display').textContent = '💀 Аномалія вбила вас!';
+                                document.getElementById('result-display').className = 'result-display fail';
+                                S.levelResult = 'fail';
+                                document.getElementById('btnSafe').disabled = true;
+                                document.getElementById('btnAnom').disabled = true;
+                                document.getElementById('retryBtn').style.display = 'inline-block';
+                                const idx = S.endless ? 0 : S.level;
+                                S.choices[idx] = { dir: 'anom', result: 'fail' };
+                                updateDots();
+                                sfxFail();
+                                const bl = document.createElement('div'); bl.className = 'blood-o';
+                                document.body.appendChild(bl); setTimeout(() => bl.remove(), 2000);
+                            }
+                        }, 100);
+                    }
+                    
+                    updateHealthBar();
+                } else {
+                    // Повільно регенеруємо, якщо далеко
+                    if (S.hp < S.maxHp) {
+                        S.hp = Math.min(S.maxHp, S.hp + 0.1);
+                        updateHealthBar();
+                        document.body.style.boxShadow = '';
+                    }
+                }
+            });
+        }
+        
+        function updateHealthBar() {
+            const bar = document.getElementById('hp-bar-fill');
+            if (bar) {
+                const pct = Math.max(0, S.hp / S.maxHp * 100);
+                bar.style.width = pct + '%';
+                if (pct < 25) bar.style.backgroundColor = '#cc2222';
+                else if (pct < 50) bar.style.backgroundColor = '#cc8822';
+                else bar.style.backgroundColor = '#448844';
+            }
+            const txt = document.getElementById('hp-text');
+            if (txt) txt.textContent = Math.ceil(S.hp) + '/' + S.maxHp;
+        }
+        
+        function createBlackSpotTexture() {
+            const c = document.createElement('canvas'); c.width = 64; c.height = 64;
+            const cx = c.getContext('2d');
+            const grad = cx.createRadialGradient(32, 32, 0, 32, 32, 30);
+            grad.addColorStop(0, 'rgba(0,0,0,1)'); grad.addColorStop(0.6, 'rgba(0,0,0,0.8)'); grad.addColorStop(1, 'rgba(0,0,0,0)');
+            cx.fillStyle = grad; cx.fillRect(0, 0, 64, 64);
+            return new THREE.CanvasTexture(c);
+        }
+        
+        function createBloodTexture() {
+            const c = document.createElement('canvas'); c.width = 64; c.height = 64;
+            const cx = c.getContext('2d');
+            const grad = cx.createRadialGradient(32, 32, 0, 32, 32, 28);
+            grad.addColorStop(0, 'rgba(120,10,10,0.9)'); grad.addColorStop(0.4, 'rgba(80,10,10,0.6)'); grad.addColorStop(1, 'rgba(80,10,10,0)');
+            cx.fillStyle = grad; cx.fillRect(0, 0, 64, 64);
+            for (let i = 0; i < 5; i++) {
+                cx.strokeStyle = `rgba(100,10,10,${0.2+Math.random()*0.3})`; cx.lineWidth = 1+Math.random()*2;
+                cx.beginPath(); cx.moveTo(20+Math.random()*30,20+Math.random()*10);
+                cx.quadraticCurveTo(30+Math.random()*20,30+Math.random()*20,25+Math.random()*20,40+Math.random()*15); cx.stroke();
+            }
+            return new THREE.CanvasTexture(c);
+        }
+        
+        function createEyesTexture() {
+            const c = document.createElement('canvas'); c.width = 64; c.height = 32;
+            const cx = c.getContext('2d'); cx.fillStyle = 'rgba(0,0,0,0)'; cx.fillRect(0, 0, 64, 32);
+            for (let i = 0; i < 2; i++) {
+                const ex = 16 + i * 34, ey = 16;
+                const grad = cx.createRadialGradient(ex, ey, 0, ex, ey, 10);
+                grad.addColorStop(0, 'rgba(50,200,50,0.8)'); grad.addColorStop(0.4, 'rgba(30,150,30,0.6)'); grad.addColorStop(1, 'rgba(0,50,0,0)');
+                cx.fillStyle = grad; cx.beginPath(); cx.arc(ex, ey, 10, 0, Math.PI * 2); cx.fill();
+                cx.fillStyle = 'rgba(0,0,0,0.9)'; cx.beginPath(); cx.arc(ex+1, ey-1, 3, 0, Math.PI*2); cx.fill();
+            }
+            return new THREE.CanvasTexture(c);
+        }
+        
+        // ===== АНІМАЦІЯ =====
+        const clock = new THREE.Clock();
+        let lightTime = 0;
+        let frameCount = 0;
+        
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            const delta = Math.min(clock.getDelta(), 0.05);
+            lightTime += delta;
+            frameCount++;
+            
+            // Мерехтіння ламп
+            const lampFlicker1 = Math.sin(lightTime * 3.7) * 0.04 + Math.sin(lightTime * 7.1) * 0.02;
+            const lampFlicker2 = Math.sin(lightTime * 4.2 + 1) * 0.03 + Math.sin(lightTime * 8.3) * 0.02;
+            
+            lamp1.light.intensity = 2.8 + lampFlicker1 * 0.5;
+            lamp1.bulb.material.opacity = 0.65 + lampFlicker1 * 0.2;
+            lamp1.glow.material.opacity = 0.08 + lampFlicker1 * 0.04;
+            
+            lamp2.light.intensity = 2.4 + lampFlicker2 * 0.4;
+            lamp2.bulb.material.opacity = 0.65 + lampFlicker2 * 0.15;
+            lamp2.glow.material.opacity = 0.08 + lampFlicker2 * 0.03;
+            
+            updateMovement(delta);
+            updateClickWalk(delta);
+            
+            const bob = getBobOffset();
+            const baseHeight = 1.6;
+            
+            pitch = Math.max(-PI_2 * 0.8, Math.min(PI_2 * 0.8, pitch));
+            euler.set(pitch, yaw, 0, 'YXZ');
+            camera.quaternion.setFromEuler(euler);
+            camera.position.y = baseHeight + bob.y;
+            
+            if (flashlight.on) {
+                const fwd = new THREE.Vector3(0, 0, -1);
+                fwd.applyQuaternion(camera.quaternion);
+                flashlightSpot.position.copy(camera.position).add(fwd.clone().multiplyScalar(0.3));
+                flashlightSpot.target.position.copy(camera.position).add(fwd.clone().multiplyScalar(5));
+            }
+            
+            // Анімація аномалій та шкоди
+            anomalyMeshes.forEach((m, i) => {
+                if (m.isSprite || m.type === 'Sprite') {
+                    m.material.opacity = 0.4 + Math.sin(lightTime * 2 + i) * 0.3;
+                }
+                // Обертання частинок навколо небезпечних аномалій
+                if (m.userData && m.userData.orbitCenter) {
+                    const a = m.userData.orbitAngle + lightTime * m.userData.orbitSpeed;
+                    const r = m.userData.orbitRad;
+                    m.position.x = m.userData.orbitCenter.x + Math.cos(a) * r;
+                    m.position.z = m.userData.orbitCenter.z + Math.sin(a) * r;
+                    m.position.y = m.userData.orbitHeight + Math.sin(lightTime * 2 + i) * 0.1;
+                }
+                // Тремтіння шлейфу
+                if (m.userData && m.userData.isTrail) {
+                    m.position.x = m.userData.basePos.x + (Math.random() - 0.5) * 0.1;
+                    m.position.z = m.userData.basePos.z + (Math.random() - 0.5) * 0.1;
+                    m.material.opacity = 0.2 + Math.sin(lightTime * 3 + i) * 0.15;
+                }
+            });
+            
+            // Небезпечні зони
+            updateDangerZones(delta);
+            
+            doorMeshes.forEach(dm => {
+                if (dm.glow.material.opacity > 0) {
+                    dm.glow.material.opacity = 0.3 + Math.sin(lightTime * 2 + dm.x) * 0.2;
+                    dm.glow.scale.x = 1 + Math.sin(lightTime * 1.5 + dm.x) * 0.1;
+                    dm.glow.scale.y = 1 + Math.sin(lightTime * 1.5 + dm.x + 1) * 0.1;
+                }
+            });
+            
+            // Мультиплеєр: оновлення аватара та синхронізація
+            if (mp.connected) {
+                mp.updateAvatar();
+                // Надсилаємо позицію кожні 3 кадри (~20 разів/сек)
+                if (frameCount % 3 === 0) {
+                    mp.sendPosition();
+                }
+            }
+            
+            renderer.render(scene, camera);
+        }
+        
+        // ===== ГОЛОСОВЕ КЕРІВНИЦТВО =====
+        function speakVoice(text) {
+            try {
+                if(!window.speechSynthesis) return;
+                window.speechSynthesis.cancel();
+                const u=new SpeechSynthesisUtterance(text);
+                u.lang='uk-UA'; u.rate=0.9; u.pitch=1.1; u.volume=0.8;
+                window.speechSynthesis.speak(u);
+            } catch(e) {}
+        }
+        
+        function playGuidanceVoice() {
+            speakVoice('Якщо є аномалія, іди в червону двері. А якщо немає, то йди в зелену.');
+        }
+        
+        // =================== ГРА ===================
+        function startGame() {
+            initAudio();
+            S={level:0,hasAnom:false,anomType:null,anomData:null,anomIdx:0,
+               levelResult:null,choices:[],pos:'center',endless:false,endlessLvl:0,endlessTotal:0,endlessUnl:false,
+               showHints:S.showHints||true,hp:100,maxHp:100,hintsAvailable:1,hintsUsedBlock:0};
+            tone(440,0.15);
+            showScene('game-scene');
+            setupLevel();
+            setTimeout(playGuidanceVoice, 600);
+            hintEl.style.opacity = '1';
+            setTimeout(() => { if (!isLocked) hintEl.style.opacity = '0.5'; }, 5000);
+            
+            // Якщо хост в мультиплеєрі, сповістити клієнта
+            if (mp.connected && mp.isHost) {
+                mp.send({ type: 'start' });
+                mp.send({ type: 'state', level: S.level, hasAnom: S.hasAnom, anomType: S.anomType, anomIdx: S.anomIdx });
+            }
+        }
+        
+        function setupLevel() {
+            S.levelResult=null; S.pos='center';
+            S.hp = S.maxHp; // Відновлення здоров'я
+            
+            // 1 підказка на 2 рівні (скидається кожні 2 рівні)
+            const curBlock = Math.floor(S.level/2);
+            if (S.hintsUsedBlock !== curBlock) {
+                S.hintsAvailable = 1;
+                S.hintsUsedBlock = curBlock;
+            }
+            // Оновлюємо кнопку підказок
+            const hintBtn = document.getElementById('hintToggle');
+            if (S.hintsAvailable > 0 && !S.showHints) {
+                hintBtn.textContent = '💡 Підказки';
+                hintBtn.classList.add('off');
+            } else if (S.hintsAvailable <= 0) {
+                hintBtn.textContent = '✖ Підказки вичерпані';
+                hintBtn.classList.add('off');
+                S.showHints = false;
+            } else if (S.showHints) {
+                hintBtn.textContent = '💡 Підказка активна';
+                hintBtn.classList.remove('off');
+            }
+            updateHealthBar();
+            document.body.style.boxShadow = '';
+            camera.position.set(0, 1.6, 0);
+            yaw = 0; pitch = 0;
+            doorWalkDir = null;
+            mp.myVote = null;
+            mp.partnerVote = null;
+            document.getElementById('partner-vote').textContent = '';
+            
+            if (mp.connected && !mp.isHost) {
+                // Клієнт чекає стан від хоста
+                // Показуємо індикацію
+                document.getElementById('result-display').textContent = '⏳ Очікування хоста...';
+                document.getElementById('result-display').className = 'result-display info';
+                document.getElementById('btnSafe').disabled = true;
+                document.getElementById('btnAnom').disabled = true;
+                document.getElementById('retryBtn').style.display = 'none';
+                clearAnomalies();
+                updateDots();
+                return;
+            }
+            
+            S.hasAnom = Math.random() < 0.55;
+            const lvl = S.endless ? {name:`Нескінченний #${S.endlessLvl}`} : LEVELS[S.level];
+            document.getElementById('lvlNum').textContent = S.endless ? '♾' : (S.level+1);
+            document.getElementById('lvlName').textContent = lvl.name;
+            updateDots();
+            clearAnomalies();
+            createRoomDecor();
+            
+            if(S.hasAnom){
+                const anomRoll = Math.random();
+                if (anomRoll < 0.25 && roomDecor.length > 0) {
+                    // Аномалія — чогось не вистачає
+                    S.anomType = 'missing';
+                    const mi = Math.floor(Math.random() * MISSING_ANOM.length);
+                    S.anomIdx = mi;
+                    S.anomData = MISSING_ANOM[mi];
+                    S.anomName = MISSING_ANOM[mi].name;
+                    // Видаляємо відповідну декорацію
+                    removeAllOfType(MISSING_ANOM[mi].type);
+                } else if (anomRoll < 0.45) {
+                    // Аномалія — щось не на своєму місці
+                    S.anomType = 'displaced';
+                    const di = Math.floor(Math.random() * DISPLACED_ANOM.length);
+                    S.anomIdx = di;
+                    S.anomData = DISPLACED_ANOM[di];
+                    S.anomName = DISPLACED_ANOM[di].name;
+                    applyDisplacedAnomaly(DISPLACED_ANOM[di]);
+                } else if (anomRoll < 0.60) {
+                    // Аномалія — щось зайве з'явилося
+                    S.anomType = 'added';
+                    const ai = Math.floor(Math.random() * ADDED_ANOM.length);
+                    S.anomIdx = ai;
+                    S.anomData = ADDED_ANOM[ai];
+                    S.anomName = ADDED_ANOM[ai].name;
+                    applyAddedAnomaly(ADDED_ANOM[ai]);
+                } else if (anomRoll < 0.80) {
+                    // Аномалія — чогось не вистачає (повторно, для більшої ймовірності)
+                    S.anomType = 'missing';
+                    const mi2 = Math.floor(Math.random() * MISSING_ANOM.length);
+                    S.anomIdx = mi2;
+                    S.anomData = MISSING_ANOM[mi2];
+                    S.anomName = MISSING_ANOM[mi2].name;
+                    removeAllOfType(MISSING_ANOM[mi2].type);
+                } else {
+                    // Аномалія — щось не на своєму місці (повторно)
+                    S.anomType = 'displaced';
+                    const di2 = Math.floor(Math.random() * DISPLACED_ANOM.length);
+                    S.anomIdx = di2;
+                    S.anomData = DISPLACED_ANOM[di2];
+                    S.anomName = DISPLACED_ANOM[di2].name;
+                    applyDisplacedAnomaly(DISPLACED_ANOM[di2]);
+                }
+
+                sfxAnom();
+                if (S.showHints) {
+                    document.getElementById('result-display').textContent='⚠️ Щось є в кімнаті...';
+                    document.getElementById('result-display').className='result-display info';
+                } else {
+                    document.getElementById('result-display').textContent='🔍 Огляньте кімнату...';
+                    document.getElementById('result-display').className='result-display clean';
+                }
+                spawnAnomaly();
+            } else {
+                if (S.showHints) {
+                    document.getElementById('result-display').textContent='✧ Все чисто ✧';
+                } else {
+                    document.getElementById('result-display').textContent='🔍 Огляньте кімнату...';
+                }
+                document.getElementById('result-display').className='result-display clean';
+            }
+            document.getElementById('btnSafe').disabled=false;
+            document.getElementById('btnAnom').disabled=false;
+            document.getElementById('retryBtn').style.display='none';
+            
+            doorMeshes.forEach(dm => { dm.glow.material.opacity = 0; });
+            
+            // Надіслати стан клієнту в мультиплеєрі
+            if (mp.connected && mp.isHost) {
+                mp.send({ type: 'state', level: S.level, hasAnom: S.hasAnom, anomType: S.anomType, anomIdx: S.anomIdx });
+            }
+        }
+        
+        function makeChoice(dir) {
+            if(S.levelResult) return;
+            
+            // В мультиплеєрі: обидва гравці голосують
+            if (mp.connected) {
+                mp.myVote = dir;
+                mp.send({ type: 'vote', choice: dir });
+                document.getElementById('btnSafe').disabled = true;
+                document.getElementById('btnAnom').disabled = true;
+                document.getElementById('partner-vote').textContent = '👤 Ви: ' + (dir === 'none' ? '🟢 Немає аномалії' : '🔴 Аномалія');
+                
+                if (mp.isHost) {
+                    // Хост чекає на голос друга
+                    if (mp.partnerVote !== null) {
+                        checkMultiplayerResult();
+                    } else {
+                        document.getElementById('result-display').textContent = '⏳ Очікування голосу друга...';
+                        document.getElementById('result-display').className = 'result-display info';
+                    }
+                } else {
+                    document.getElementById('result-display').textContent = '⏳ Очікування результату...';
+                    document.getElementById('result-display').className = 'result-display info';
+                }
+                return;
+            }
+            
+            checkResult(dir);
+        }
+        
+        function checkMultiplayerResult() {
+            // Обидва проголосували — хост визначає спільний результат
+            const hostCorrect = (mp.myVote === 'none' && !S.hasAnom) || (mp.myVote === 'anom' && S.hasAnom);
+            const partnerCorrect = (mp.partnerVote === 'none' && !S.hasAnom) || (mp.partnerVote === 'anom' && S.hasAnom);
+            const bothCorrect = hostCorrect && partnerCorrect;
+            
+            document.getElementById('btnSafe').disabled = true;
+            document.getElementById('btnAnom').disabled = true;
+            const box = document.getElementById('result-display');
+            
+            if (bothCorrect) {
+                S.levelResult = 'success';
+                box.innerHTML = '✅ Обидва праві!';
+                box.className = 'result-display ok';
+                sfxSuc();
+                const fl = document.createElement('div'); fl.className = 'flash';
+                document.body.appendChild(fl); setTimeout(() => fl.remove(), 500);
+                
+                mp.send({ type: 'result', correct: true });
+                
+                if (!S.endless && S.level >= 4) { setTimeout(() => showFinal(true), 800); return; }
+                else if (S.endless) { S.endlessLvl++; S.endlessTotal++; setTimeout(() => setupLevel(), 1200); }
+                else {
+                    S.level++;
+                    mp.send({ type: 'next_level', level: S.level, victory: false });
+                    setTimeout(() => setupLevel(), 1200);
+                }
+            } else {
+                S.levelResult = 'fail';
+                if (!hostCorrect && !partnerCorrect) {
+                    box.innerHTML = '💀 Обидва помилилися...';
+                } else {
+                    box.innerHTML = '💀 Ви не дійшли згоди...';
+                }
+                box.className = 'result-display fail';
+                sfxFail();
+                const bl = document.createElement('div'); bl.className = 'blood-o';
+                document.body.appendChild(bl); setTimeout(() => bl.remove(), 2000);
+                document.getElementById('retryBtn').style.display = 'inline-block';
+                
+                mp.send({ type: 'result', correct: false });
+            }
+            const idx = S.endless ? 0 : S.level;
+            S.choices[idx] = { dir: mp.myVote, result: S.levelResult };
+            updateDots();
+        }
+        
+        function checkResult(dir) {
+            let correct=(dir==='none' && !S.hasAnom) || (dir==='anom' && S.hasAnom);
+            document.getElementById('btnSafe').disabled=true;
+            document.getElementById('btnAnom').disabled=true;
+            const box=document.getElementById('result-display');
+            
+            if(correct){
+                S.levelResult='success'; box.innerHTML='✅ Правильно!'; box.className='result-display ok';
+                sfxSuc();
+                const fl=document.createElement('div'); fl.className='flash';
+                document.body.appendChild(fl); setTimeout(()=>fl.remove(),500);
+                
+                if (mp.connected && mp.isHost) {
+                    mp.send({ type: 'result', correct: true });
+                }
+                
+                if(!S.endless && S.level>=4){ setTimeout(()=>showFinal(true),800); return; }
+                else if(S.endless){ S.endlessLvl++; S.endlessTotal++; setTimeout(()=>setupLevel(),1200); }
+                else {
+                    S.level++;
+                    if (mp.connected && mp.isHost) {
+                        mp.send({ type: 'next_level', level: S.level, victory: false });
+                    }
+                    setTimeout(()=>setupLevel(),1200);
+                }
+            } else {
+                S.levelResult='fail';
+                box.innerHTML=['💀 Темрява забрала вас...','💀 Ви помилилися...','💀 Аномалія схопила вас...'][Math.floor(Math.random()*3)];
+                box.className='result-display fail'; sfxFail();
+                const bl=document.createElement('div'); bl.className='blood-o';
+                document.body.appendChild(bl); setTimeout(()=>bl.remove(),2000);
+                document.getElementById('retryBtn').style.display='inline-block';
+                
+                if (mp.connected && mp.isHost) {
+                    mp.send({ type: 'result', correct: false });
+                }
+            }
+            const idx=S.endless?0:S.level;
+            S.choices[idx]={dir,result:S.levelResult};
+            updateDots();
+        }
+        
+        function showFinal(vic) {
+            showScene('final');
+            const t=document.getElementById('endTitle'),tx=document.getElementById('endText'),sy=document.getElementById('endSym');
+            if(vic){
+                t.textContent='✧ Перемога ✧'; t.className='ending-title good'; sy.textContent='☀';
+                tx.innerHTML=`<p>Ви пройшли <strong>5 рівнів</strong>!</p><br><p>Берете <strong>свічку</strong> та <strong>дзеркало</strong> —<br>і правильно розташовуєте їх.</p><br><p>Дух зникає у світлі.</p><br><p><em>Світ врятовано. Але плями залишаються...</em></p>`;
+                S.endlessUnl=true; document.getElementById('btnEL').style.display='inline-block';
+                document.getElementById('esStats').style.display='block'; document.getElementById('esCount').textContent='0';
+                sfxSuc(); setTimeout(()=>sfxSuc(),500);
+                
+                if (mp.connected && mp.isHost) {
+                    mp.send({ type: 'next_level', victory: true });
+                }
+            } else {
+                t.textContent='✟ Поразка ✟'; t.className='ending-title bad'; sy.textContent='⟁';
+                tx.innerHTML=`<p>Темрява поглинула вас...</p><br><p><em>Можливо, наступного разу?</em></p>`; sfxFail();
+            }
+        }
+        
+        function startEndless(){S.endless=true;S.endlessLvl=0;S.endlessTotal=parseInt(document.getElementById('esCount').textContent)||0;S.choices=[];showScene('game-scene');setupLevel();}
+        function restartGame(){mp.destroy();showScene('title');S={level:0,hasAnom:false,anomType:null,anomData:null,anomIdx:0,levelResult:null,choices:[],pos:'center',endless:false,endlessLvl:0,endlessTotal:0,endlessUnl:S.endlessUnl||false,showHints:S.showHints||true,hp:100,maxHp:100,hintsAvailable:1,hintsUsedBlock:0};document.getElementById('mp-code-display').textContent='';document.getElementById('mp-status').textContent='';document.getElementById('mp-status').className='';document.getElementById('mp-players').innerHTML='';}
+
+        
+        function updateDots() {
+            const c=document.getElementById('dotsRow'); c.innerHTML='';
+            for(let i=0;i<5;i++){
+                const d=document.createElement('div'); d.className='l-dot';
+                if(S.endless){d.textContent='♾';d.style.fontSize='0.45em';if(i===0)d.classList.add('cur');c.appendChild(d);continue;}
+                d.textContent=i+1;
+                if(i<S.level){const ch=S.choices[i];if(ch&&ch.result==='success')d.classList.add('done');else if(ch&&ch.result==='fail')d.classList.add('fail');}
+                else if(i===S.level)d.classList.add('cur');c.appendChild(d);
+            }
+        }
+        
+        function toggleHints() {
+            // Перевірка чи є доступні підказки
+            if (S.hintsAvailable <= 0) {
+                const box = document.getElementById('result-display');
+                box.textContent = '✖ Більше немає підказок на цьому рівні!';
+                box.className = 'result-display fail';
+                return;
+            }
+            
+            S.showHints = !S.showHints;
+            const btn = document.getElementById('hintToggle');
+            
+            if (S.showHints) {
+                // Використовуємо підказку
+                S.hintsAvailable--;
+                S.hintsUsedBlock = Math.floor(S.level/2);
+                btn.textContent = '💡 Підказка активна';
+
+                btn.classList.remove('off');
+            } else {
+                btn.textContent = '💡 Підказки';
+                btn.classList.toggle('off', true);
+            }
+            
+            // Оновити поточне відображення
+            if (S.hasAnom && S.levelResult === null) {
+                document.getElementById('result-display').textContent = S.showHints ? '⚠️ Щось є в кімнаті...' : '🔍 Огляньте кімнату...';
+                document.getElementById('result-display').className = S.showHints ? 'result-display info' : 'result-display clean';
+            } else if (!S.hasAnom && S.levelResult === null) {
+                document.getElementById('result-display').textContent = S.showHints ? '✧ Все чисто ✧' : '🔍 Огляньте кімнату...';
+                document.getElementById('result-display').className = 'result-display clean';
+            }
+        }
+
+        
+        function showLore(){const ts=['"Вони переплутали свічку і дзеркало..."','"Ритуал викликання Духа Світла пішов не так"','"Поставили свічку перед дзеркалом, а дзеркало — на місце свічки"','"Замість Духа — ВОНО. Воно в кімнаті."','"Якщо бачиш аномалію — іди в червону двері."','"Якщо кімната чиста — іди в зелену."','"Плями на стінах... вони ростуть..."','"Нескінченність — це пастка..."'];alert('📜 '+ts[Math.floor(Math.random()*ts.length)]);}
+        
+        // =================== РЕСАЙЗ ===================
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+        
+        animate();
+    </script>
+</body>
+</html>

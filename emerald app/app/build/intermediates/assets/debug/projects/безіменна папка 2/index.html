@@ -1,0 +1,797 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Emerald</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html, body {
+    height: 100%;
+    background: radial-gradient(circle at 50% 40%, #11241c 0%, #06100c 70%, #030806 100%);
+    overflow: hidden;
+    font-family: "Trebuchet MS", "Segoe UI", sans-serif;
+  }
+
+  .scene {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .vortex {
+    position: absolute;
+    width: 320px;
+    height: 320px;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    opacity: 0;
+    animation: vortexIn 1.2s ease forwards;
+    animation-delay: 3.8s;
+    pointer-events: none;
+  }
+
+  .vortex::before,
+  .vortex::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    border: 2px solid transparent;
+    transform: translate(-50%, -50%);
+  }
+
+  .vortex::before {
+    border-top-color: rgba(30, 215, 155, 0.4);
+    border-right-color: rgba(30, 215, 155, 0.4);
+    animation: spinCW 2s linear infinite;
+  }
+
+  .vortex::after {
+    width: 80%;
+    height: 80%;
+    border-bottom-color: rgba(30, 215, 155, 0.3);
+    border-left-color: rgba(30, 215, 155, 0.3);
+    animation: spinCCW 1.5s linear infinite;
+  }
+
+  .vortex-ring {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 60%;
+    height: 60%;
+    transform: translate(-50%, -50%);
+    border-radius: 50%;
+    border: 1px solid rgba(30, 215, 155, 0.2);
+    animation: spinCW 3s linear infinite;
+  }
+
+  @keyframes spinCW {
+    from { transform: translate(-50%, -50%) rotate(0deg); }
+    to   { transform: translate(-50%, -50%) rotate(360deg); }
+  }
+
+  @keyframes spinCCW {
+    from { transform: translate(-50%, -50%) rotate(0deg); }
+    to   { transform: translate(-50%, -50%) rotate(-360deg); }
+  }
+
+  @keyframes vortexIn {
+    from { opacity: 0; transform: translate(-50%, -50%) scale(0.5); }
+    to   { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  }
+
+  @keyframes vortexOut {
+    from { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+    to   { opacity: 0; transform: translate(-50%, -50%) scale(1.5); }
+  }
+
+  .emerald-wrap {
+    position: absolute;
+    left: -300px;
+    top: 50%;
+    transform: translateY(-50%);
+    opacity: 0;
+    animation: fly 2s cubic-bezier(.22,.61,.36,1) forwards;
+    animation-delay: 1.8s;
+  }
+
+  @keyframes fly {
+    0%   { left: -300px; opacity: 0; }
+    10%  { opacity: 1; }
+    100% { left: 50%; transform: translate(-50%, -50%); opacity: 1; }
+  }
+
+  .emerald {
+    position: relative;
+    width: 230px;
+    height: 230px;
+    transform: rotate(45deg);
+    animation: spin 2s cubic-bezier(.22,.61,.36,1) forwards;
+    background: linear-gradient(135deg, #0b3d2e 0%, #1ed79b 35%, #0a8f63 55%, #0b3d2e 100%);
+    box-shadow:
+      inset 0 0 30px rgba(3, 30, 20, .9),
+      inset 0 0 8px rgba(180, 255, 225, .8),
+      0 0 35px rgba(30, 215, 155, .55),
+      0 0 70px rgba(30, 215, 155, .3);
+    border: 2px solid rgba(180, 255, 225, .35);
+    border-radius: 10px;
+  }
+
+  @keyframes spin {
+    from { transform: rotate(45deg); }
+    to   { transform: rotate(405deg); }
+  }
+
+  .letter {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 96px;
+    font-weight: 900;
+    color: rgba(200, 255, 230, 0.9);
+    background: transparent;
+    text-shadow:
+      0 0 10px rgba(220, 255, 240, 0.9),
+      0 0 25px rgba(180, 255, 220, 0.7),
+      0 0 50px rgba(120, 240, 200, 0.5);
+    opacity: 0;
+    animation: letterIn .4s ease forwards;
+    animation-delay: 4.0s;
+  }
+
+  @keyframes letterIn {
+    from { opacity: 0; transform: translate(-50%, -50%) scale(.4); }
+    to   { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  }
+
+  .word {
+    position: absolute;
+    bottom: 14%;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 52px;
+    letter-spacing: 14px;
+    font-weight: 800;
+    color: #1ed79b;
+    text-shadow: 0 0 18px rgba(30, 215, 155, .7);
+    opacity: 0;
+    animation: wordIn 1s ease forwards;
+    animation-delay: 6.5s;
+  }
+
+  @keyframes wordIn {
+    from { opacity: 0; letter-spacing: 40px; }
+    to   { opacity: 1; letter-spacing: 14px; }
+  }
+
+  .droplet {
+    position: absolute;
+    width: 6px;
+    height: 6px;
+    background: rgba(30, 215, 155, 0.6);
+    border-radius: 50%;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .droplet:nth-child(1) { animation: dropletIn 1.5s ease forwards; animation-delay: 3.9s; top: 30%; left: 40%; }
+  .droplet:nth-child(2) { animation: dropletIn 1.5s ease forwards; animation-delay: 4.05s; top: 60%; left: 55%; }
+  .droplet:nth-child(3) { animation: dropletIn 1.5s ease forwards; animation-delay: 4.2s; top: 45%; left: 65%; }
+  .droplet:nth-child(4) { animation: dropletIn 1.5s ease forwards; animation-delay: 4.35s; top: 35%; left: 50%; }
+  .droplet:nth-child(5) { animation: dropletIn 1.5s ease forwards; animation-delay: 4.5s; top: 55%; left: 45%; }
+  .droplet:nth-child(6) { animation: dropletIn 1.5s ease forwards; animation-delay: 4.65s; top: 25%; left: 60%; }
+  .droplet:nth-child(7) { animation: dropletIn 1.5s ease forwards; animation-delay: 4.8s; top: 65%; left: 35%; }
+  .droplet:nth-child(8) { animation: dropletIn 1.5s ease forwards; animation-delay: 4.95s; top: 40%; left: 30%; }
+  .droplet:nth-child(9) { animation: dropletIn 1.5s ease forwards; animation-delay: 5.1s; top: 50%; left: 70%; }
+  .droplet:nth-child(10) { animation: dropletIn 1.5s ease forwards; animation-delay: 5.25s; top: 70%; left: 50%; }
+  .droplet:nth-child(11) { animation: dropletIn 1.5s ease forwards; animation-delay: 3.95s; top: 60%; left: 55%; }
+  .droplet:nth-child(12) { animation: dropletIn 1.5s ease forwards; animation-delay: 4.2s; top: 45%; left: 65%; }
+  .droplet:nth-child(13) { animation: dropletIn 1.5s ease forwards; animation-delay: 4.35s; top: 35%; left: 50%; }
+  .droplet:nth-child(14) { animation: dropletIn 1.5s ease forwards; animation-delay: 4.5s; top: 55%; left: 45%; }
+  .droplet:nth-child(15) { animation: dropletIn 1.5s ease forwards; animation-delay: 4.65s; top: 25%; left: 60%; }
+  .droplet:nth-child(16) { animation: dropletIn 1.5s ease forwards; animation-delay: 4.8s; top: 65%; left: 35%; }
+  .droplet:nth-child(17) { animation: dropletIn 1.5s ease forwards; animation-delay: 4.95s; top: 40%; left: 30%; }
+  .droplet:nth-child(18) { animation: dropletIn 1.5s ease forwards; animation-delay: 5.1s; top: 50%; left: 70%; }
+  .droplet:nth-child(19) { animation: dropletIn 1.5s ease forwards; animation-delay: 5.25s; top: 70%; left: 50%; }
+
+  @keyframes dropletIn {
+    0%   { opacity: 0; transform: translateY(-20px) scale(0); }
+    30%  { opacity: 0.8; }
+    100% { opacity: 0; transform: translateY(0) scale(1); }
+  }
+
+  .ripple {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 10px;
+    height: 10px;
+    border: 1px solid rgba(30, 215, 155, 0.4);
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .ripple:nth-child(1) { animation: rippleOut 2s ease-out forwards; animation-delay: 3.8s; }
+  .ripple:nth-child(2) { animation: rippleOut 2s ease-out forwards; animation-delay: 4.0s; }
+  .ripple:nth-child(3) { animation: rippleOut 2s ease-out forwards; animation-delay: 4.2s; }
+  .ripple:nth-child(4) { animation: rippleOut 2s ease-out forwards; animation-delay: 4.4s; }
+  .ripple:nth-child(5) { animation: rippleOut 2s ease-out forwards; animation-delay: 4.6s; }
+  .ripple:nth-child(6) { animation: rippleOut 2s ease-out forwards; animation-delay: 3.8s; }
+  .ripple:nth-child(7) { animation: rippleOut 2s ease-out forwards; animation-delay: 4.0s; }
+  .ripple:nth-child(8) { animation: rippleOut 2s ease-out forwards; animation-delay: 4.2s; }
+  .ripple:nth-child(9) { animation: rippleOut 2s ease-out forwards; animation-delay: 4.4s; }
+
+  @keyframes rippleOut {
+    0%   { opacity: 0.7; transform: translate(-50%, -50%) scale(1); }
+    100% { opacity: 0; transform: translate(-50%, -50%) scale(20); }
+  }
+
+  .water-stream {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
+    pointer-events: none;
+    opacity: 0;
+    animation: streamIn 1s ease forwards;
+    animation-delay: 3.8s;
+  }
+
+  .water-stream::before {
+    content: "";
+    position: absolute;
+    top: 20%;
+    left: -10%;
+    width: 120%;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, rgba(30, 215, 155, 0.3), transparent);
+    animation: streamFlow 3s linear infinite;
+  }
+
+  .water-stream::after {
+    content: "";
+    position: absolute;
+    bottom: 30%;
+    left: -10%;
+    width: 120%;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, rgba(30, 215, 155, 0.2), transparent);
+    animation: streamFlow 4s linear infinite reverse;
+  }
+
+  @keyframes streamIn {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+  }
+
+  @keyframes streamFlow {
+    from { transform: translateX(-100%); }
+    to   { transform: translateX(100%); }
+  }
+</style>
+</head>
+<body>
+  <div class="scene">
+    <div class="water-stream"></div>
+    <div class="vortex">
+      <div class="vortex-ring"></div>
+    </div>
+    <div class="emerald-wrap">
+      <div class="emerald">
+        <canvas class="droplets-overlay" width="230" height="230"></canvas>
+      </div>
+      <div class="letter" id="letter">Е</div>
+    </div>
+    <div class="word">emerald</div>
+    <div class="ripple"></div>
+    <div class="ripple"></div>
+    <div class="ripple"></div>
+    <div class="ripple"></div>
+    <div class="ripple"></div>
+    <div class="ripple"></div>
+    <div class="ripple"></div>
+    <div class="ripple"></div>
+    <div class="ripple"></div>
+    <div class="droplet"></div>
+    <div class="droplet"></div>
+    <div class="droplet"></div>
+    <div class="droplet"></div>
+    <div class="droplet"></div>
+    <div class="droplet"></div>
+    <div class="droplet"></div>
+    <div class="droplet"></div>
+    <div class="droplet"></div>
+    <div class="droplet"></div>
+    <div class="droplet"></div>
+    <div class="droplet"></div>
+    <div class="droplet"></div>
+    <div class="droplet"></div>
+    <div class="droplet"></div>
+    <div class="droplet"></div>
+    <div class="droplet"></div>
+    <div class="droplet"></div>
+    <div class="droplet"></div>
+  </div>
+
+  <script>
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+
+    function playWaterSound() {
+      const now = ctx.currentTime;
+      const bufferSize = ctx.sampleRate * 2;
+      const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+      const data = buffer.getChannelData(0);
+      for (let i = 0; i < bufferSize; i++) {
+        data[i] = (Math.random() * 2 - 1) * 0.3;
+      }
+      const noise = ctx.createBufferSource();
+      noise.buffer = buffer;
+      const filter = ctx.createBiquadFilter();
+      filter.type = "bandpass";
+      filter.frequency.setValueAtTime(3000, now);
+      filter.frequency.linearRampToValueAtTime(800, now + 2.0);
+      filter.Q.value = 0.5;
+      const gain = ctx.createGain();
+      gain.gain.setValueAtTime(0.0001, now);
+      gain.gain.linearRampToValueAtTime(0.04, now + 0.3);
+      gain.gain.setValueAtTime(0.04, now + 1.2);
+      gain.gain.linearRampToValueAtTime(0.0001, now + 2.0);
+      noise.connect(filter).connect(gain).connect(ctx.destination);
+      noise.start(now);
+      noise.stop(now + 2.1);
+    }
+
+    function playDistantDrone() {
+      const now = ctx.currentTime;
+      const osc1 = ctx.createOscillator();
+      const osc2 = ctx.createOscillator();
+      const gain = ctx.createGain();
+      const filter = ctx.createBiquadFilter();
+      osc1.type = "sine";
+      osc1.frequency.value = 130.81;
+      osc2.type = "sine";
+      osc2.frequency.value = 196;
+      filter.type = "lowpass";
+      filter.frequency.setValueAtTime(300, now);
+      filter.frequency.linearRampToValueAtTime(150, now + 2.0);
+      filter.Q.value = 1;
+      gain.gain.setValueAtTime(0.0001, now);
+      gain.gain.linearRampToValueAtTime(0.03, now + 0.5);
+      gain.gain.setValueAtTime(0.03, now + 1.0);
+      gain.gain.linearRampToValueAtTime(0.0001, now + 2.0);
+      osc1.connect(filter);
+      osc2.connect(filter);
+      filter.connect(gain).connect(ctx.destination);
+      osc1.start(now);
+      osc2.start(now);
+      osc1.stop(now + 2.1);
+      osc2.stop(now + 2.1);
+    }
+
+    function playDistantMelody() {
+      const now = ctx.currentTime;
+      const notes = [
+        { freq: 523, time: 0.3, dur: 0.4 },
+        { freq: 659, time: 0.8, dur: 0.3 },
+        { freq: 784, time: 1.2, dur: 0.5 },
+      ];
+      notes.forEach(({ freq, time, dur }) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        const filter = ctx.createBiquadFilter();
+        osc.type = "sine";
+        osc.frequency.value = freq;
+        filter.type = "lowpass";
+        filter.frequency.value = 400;
+        gain.gain.setValueAtTime(0.0001, now + time);
+        gain.gain.linearRampToValueAtTime(0.015, now + time + 0.05);
+        gain.gain.linearRampToValueAtTime(0.0001, now + time + dur);
+        osc.connect(filter).connect(gain).connect(ctx.destination);
+        osc.start(now + time);
+        osc.stop(now + time + dur + 0.1);
+      });
+    }
+
+    function playVortexSound() {
+      const now = ctx.currentTime;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      const lfo = ctx.createOscillator();
+      const lfoGain = ctx.createGain();
+      lfo.type = "sine";
+      lfo.frequency.value = 4;
+      lfoGain.gain.value = 30;
+      lfo.connect(lfoGain);
+      lfoGain.connect(osc.frequency);
+      osc.type = "sine";
+      osc.frequency.value = 200;
+      gain.gain.setValueAtTime(0.0001, now);
+      gain.gain.linearRampToValueAtTime(0.05, now + 0.5);
+      gain.gain.setValueAtTime(0.05, now + 1.0);
+      gain.gain.linearRampToValueAtTime(0.0001, now + 1.5);
+      osc.connect(gain).connect(ctx.destination);
+      lfo.start(now);
+      osc.start(now);
+      osc.stop(now + 1.6);
+      lfo.stop(now + 1.6);
+    }
+
+    function playChime() {
+      const now = ctx.currentTime;
+      const baseFreqs = [523.25, 659.25, 783.99, 1046.50];
+      baseFreqs.forEach((freq, i) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        const filter = ctx.createBiquadFilter();
+        osc.type = "sine";
+        osc.frequency.value = freq;
+        filter.type = "lowpass";
+        filter.frequency.setValueAtTime(2000, now + i * 0.12);
+        filter.frequency.linearRampToValueAtTime(600, now + i * 0.12 + 1.0);
+        gain.gain.setValueAtTime(0.0001, now + i * 0.12);
+        gain.gain.linearRampToValueAtTime(0.12, now + i * 0.12 + 0.06);
+        gain.gain.linearRampToValueAtTime(0.0001, now + i * 0.12 + 1.4);
+        osc.connect(filter).connect(gain).connect(ctx.destination);
+        osc.start(now + i * 0.12);
+        osc.stop(now + i * 0.12 + 1.5);
+      });
+    }
+
+    function playSplash() {
+      const now = ctx.currentTime;
+      const bufferSize = ctx.sampleRate * 1.5;
+      const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+      const data = buffer.getChannelData(0);
+      for (let i = 0; i < bufferSize; i++) {
+        data[i] = (Math.random() * 2 - 1) * 0.25;
+      }
+      const noise = ctx.createBufferSource();
+      noise.buffer = buffer;
+      const filter = ctx.createBiquadFilter();
+      filter.type = "bandpass";
+      filter.frequency.setValueAtTime(2500, now);
+      filter.frequency.linearRampToValueAtTime(1500, now + 0.5);
+      filter.Q.value = 0.3;
+      const gain = ctx.createGain();
+      gain.gain.setValueAtTime(0.0001, now);
+      gain.gain.linearRampToValueAtTime(0.06, now + 0.05);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.8);
+      noise.connect(filter).connect(gain).connect(ctx.destination);
+      noise.start(now);
+      noise.stop(now + 0.9);
+    }
+
+    function playWaterFlow() {
+      const now = ctx.currentTime;
+      const bufferSize = ctx.sampleRate * 1.5;
+      const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+      const data = buffer.getChannelData(0);
+      for (let i = 0; i < bufferSize; i++) {
+        data[i] = (Math.random() * 2 - 1) * 0.2;
+      }
+      const noise = ctx.createBufferSource();
+      noise.buffer = buffer;
+      const filter = ctx.createBiquadFilter();
+      filter.type = "bandpass";
+      filter.frequency.setValueAtTime(2000, now);
+      filter.frequency.linearRampToValueAtTime(1000, now + 1.0);
+      filter.Q.value = 0.8;
+      const gain = ctx.createGain();
+      gain.gain.setValueAtTime(0.0001, now);
+      gain.gain.linearRampToValueAtTime(0.05, now + 0.2);
+      gain.gain.setValueAtTime(0.05, now + 0.8);
+      gain.gain.linearRampToValueAtTime(0.0001, now + 1.5);
+      noise.connect(filter).connect(gain).connect(ctx.destination);
+      noise.start(now);
+      noise.stop(now + 1.6);
+    }
+
+    function playFinalMelody() {
+      const now = ctx.currentTime;
+      const notes = [
+        { freq: 392,  time: 0.00, dur: 0.18 },
+        { freq: 330,  time: 0.22, dur: 0.15 },
+        { freq: 440,  time: 0.42, dur: 0.12 },
+        { freq: 587,  time: 0.58, dur: 0.10 },
+        { freq: 784,  time: 0.72, dur: 0.10 },
+        { freq: 587,  time: 0.86, dur: 0.10 },
+        { freq: 440,  time: 1.00, dur: 0.10 },
+        { freq: 330,  time: 1.14, dur: 0.12 },
+        { freq: 392,  time: 1.30, dur: 0.15 },
+        { freq: 523,  time: 1.50, dur: 0.15 },
+        { freq: 659,  time: 1.70, dur: 0.12 },
+        { freq: 784,  time: 1.86, dur: 0.70 },
+      ];
+      notes.forEach(({ freq, time, dur }) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        const filter = ctx.createBiquadFilter();
+        osc.type = "sine";
+        osc.frequency.value = freq;
+        filter.type = "lowpass";
+        filter.frequency.setValueAtTime(3000, now + time);
+        filter.frequency.linearRampToValueAtTime(800, now + time + dur);
+        gain.gain.setValueAtTime(0.0001, now + time);
+        gain.gain.linearRampToValueAtTime(0.10, now + time + 0.03);
+        gain.gain.linearRampToValueAtTime(0.0001, now + time + dur + 0.5);
+        osc.connect(filter).connect(gain).connect(ctx.destination);
+        osc.start(now + time);
+        osc.stop(now + time + dur + 0.6);
+      });
+    }
+
+    // ============================================================
+    // ЖИВІ КРАПЛІ — анімація на canvas
+    // ============================================================
+    const canvas = document.querySelector('.droplets-overlay');
+    const cctx = canvas.getContext('2d');
+    const CW = canvas.width;
+    const CH = canvas.height;
+
+    // Базові краплі з фазами для анімації
+    const liveDrops = [
+      { bx: 105, by: 55, br: 14, o: 0.9, trail: true, phase: 0 },
+      { bx: 155, by: 70, br: 11, o: 0.85, trail: false, phase: 1.2 },
+      { bx: 175, by: 120, br: 16, o: 0.92, trail: true, phase: 2.5 },
+      { bx: 80, by: 150, br: 13, o: 0.88, trail: true, phase: 0.8 },
+      { bx: 130, by: 175, br: 10, o: 0.85, trail: false, phase: 3.1 },
+      { bx: 115, by: 115, br: 12, o: 0.82, trail: false, phase: 1.7 },
+      { bx: 115, by: 75, br: 7, o: 0.8, trail: false, phase: 4.0 },
+      { bx: 65, by: 100, br: 9, o: 0.83, trail: false, phase: 2.2 },
+      { bx: 170, by: 150, br: 8, o: 0.84, trail: false, phase: 0.3 },
+      { bx: 75, by: 165, br: 6, o: 0.78, trail: false, phase: 3.8 },
+      { bx: 85, by: 60, br: 4, o: 0.75, trail: false, phase: 1.0 },
+      { bx: 145, by: 55, br: 3.5, o: 0.73, trail: false, phase: 2.8 },
+      { bx: 180, by: 110, br: 5, o: 0.76, trail: false, phase: 4.5 },
+      { bx: 140, by: 185, br: 3, o: 0.7, trail: false, phase: 0.6 },
+      { bx: 55, by: 130, br: 3.5, o: 0.72, trail: false, phase: 3.3 },
+      { bx: 125, by: 95, br: 2.5, o: 0.68, trail: false, phase: 1.9 },
+      { bx: 90, by: 135, br: 2, o: 0.65, trail: false, phase: 4.2 },
+      { bx: 160, by: 165, br: 2.5, o: 0.67, trail: false, phase: 0.9 },
+      { bx: 100, by: 80, br: 2, o: 0.64, trail: false, phase: 2.5 },
+      { bx: 145, by: 145, br: 2.5, o: 0.66, trail: false, phase: 3.7 },
+      { bx: 70, by: 110, br: 2, o: 0.63, trail: false, phase: 1.4 },
+      { bx: 165, by: 85, br: 2.5, o: 0.62, trail: false, phase: 4.8 },
+      { bx: 120, by: 130, br: 1.8, o: 0.6, trail: false, phase: 0.1 },
+      { bx: 85, by: 95, br: 1.5, o: 0.58, trail: false, phase: 2.0 },
+      { bx: 150, by: 120, br: 1.8, o: 0.59, trail: false, phase: 3.5 },
+    ];
+
+    // Мікро-краплі, що плавають
+    const microDrops = [];
+    for (let i = 0; i < 20; i++) {
+      microDrops.push({
+        x: Math.random() * CW,
+        y: Math.random() * CH,
+        r: 0.8 + Math.random() * 2.5,
+        speedX: (Math.random() - 0.5) * 0.4,
+        speedY: 0.1 + Math.random() * 0.4,
+        alpha: 0.2 + Math.random() * 0.5,
+        phase: Math.random() * Math.PI * 2,
+      });
+    }
+
+    function drawLiveDroplet(x, y, radius, opacity, hasTrail, time) {
+      // Дихання — краплі пульсують
+      const breath = 1 + Math.sin(time * 0.8 + x * 0.01 + y * 0.01) * 0.06;
+      const r = radius * breath;
+      // Легке зміщення
+      const dx = Math.sin(time * 0.5 + x * 0.02) * 1.2;
+      const dy = Math.cos(time * 0.6 + y * 0.02) * 1.2;
+      const px = x + dx;
+      const py = y + dy;
+
+      // Тінь
+      cctx.save();
+      cctx.globalAlpha = opacity * 0.15;
+      cctx.fillStyle = 'rgba(0,0,0,0.3)';
+      cctx.beginPath();
+      cctx.ellipse(px + 2, py + 3, r * 0.9, r * 0.7, 0, 0, Math.PI * 2);
+      cctx.fill();
+      cctx.restore();
+
+      // Хвіст (тільки для великих)
+      if (hasTrail) {
+        cctx.save();
+        cctx.globalAlpha = opacity * 0.5;
+        const trailLen = r * 2.5;
+        const trailGrad = cctx.createLinearGradient(px, py, px, py + trailLen);
+        trailGrad.addColorStop(0, 'rgba(200,255,235,0.35)');
+        trailGrad.addColorStop(0.4, 'rgba(150,240,210,0.15)');
+        trailGrad.addColorStop(1, 'rgba(30,200,150,0)');
+        cctx.fillStyle = trailGrad;
+        cctx.beginPath();
+        cctx.moveTo(px - r * 0.25, py);
+        cctx.quadraticCurveTo(px - r * 0.1, py + trailLen * 0.6, px + r * 0.3, py + trailLen);
+        cctx.lineTo(px - r * 0.3, py + trailLen);
+        cctx.quadraticCurveTo(px + r * 0.1, py + trailLen * 0.5, px + r * 0.25, py);
+        cctx.closePath();
+        cctx.fill();
+        cctx.restore();
+      }
+
+      // Тіло краплі
+      cctx.save();
+      cctx.globalAlpha = opacity;
+
+      const bodyGrad = cctx.createRadialGradient(
+        px - r * 0.3, py - r * 0.3, r * 0.1,
+        px, py, r * 1.3
+      );
+      bodyGrad.addColorStop(0, 'rgba(255,255,255,0.85)');
+      bodyGrad.addColorStop(0.15, 'rgba(245,255,252,0.75)');
+      bodyGrad.addColorStop(0.35, 'rgba(210,255,240,0.5)');
+      bodyGrad.addColorStop(0.
+.65, 'rgba(120,230,195,0.25)');
+      bodyGrad.addColorStop(1, 'rgba(30,200,150,0.05)');
+      cctx.fillStyle = bodyGrad;
+
+      cctx.shadowColor = 'rgba(0,0,0,0.15)';
+      cctx.shadowBlur = 3;
+      cctx.shadowOffsetX = 1;
+      cctx.shadowOffsetY = 2;
+
+      cctx.beginPath();
+      cctx.ellipse(px, py, r, r * 1.1, 0, 0, Math.PI * 2);
+      cctx.fill();
+
+      cctx.shadowColor = 'transparent';
+      cctx.shadowBlur = 0;
+      cctx.shadowOffsetX = 0;
+      cctx.shadowOffsetY = 0;
+
+      // Blik
+      const hlIntensity = 0.7 + Math.sin(time * 1.2 + x) * 0.3;
+      const hlGrad = cctx.createRadialGradient(
+        px - r * 0.3, py - r * 0.3, 0,
+        px - r * 0.2, py - r * 0.2, r * 0.6
+      );
+      hlGrad.addColorStop(0, `rgba(255,255,255,${0.95 * hlIntensity})`);
+      hlGrad.addColorStop(0.3, `rgba(255,255,255,${0.5 * hlIntensity})`);
+      hlGrad.addColorStop(1, 'rgba(255,255,255,0)');
+      cctx.fillStyle = hlGrad;
+      cctx.beginPath();
+      cctx.ellipse(px - r * 0.15, py - r * 0.15, r * 0.55, r * 0.55, 0, 0, Math.PI * 2);
+      cctx.fill();
+
+      const hlSmall = cctx.createRadialGradient(
+        px - r * 0.15, py - r * 0.15, 0,
+        px - r * 0.1, py - r * 0.1, r * 0.22
+      );
+      hlSmall.addColorStop(0, `rgba(255,255,255,${0.98 * hlIntensity})`);
+      hlSmall.addColorStop(0.5, `rgba(255,255,255,${0.4 * hlIntensity})`);
+      hlSmall.addColorStop(1, 'rgba(255,255,255,0)');
+      cctx.fillStyle = hlSmall;
+      cctx.beginPath();
+      cctx.ellipse(px - r * 0.08, py - r * 0.08, r * 0.22, r * 0.22, 0, 0, Math.PI * 2);
+      cctx.fill();
+
+      const hlEdge = cctx.createRadialGradient(
+        px + r * 0.5, py + r * 0.5, 0,
+        px + r * 0.4, py + r * 0.4, r * 0.35
+      );
+      hlEdge.addColorStop(0, `rgba(255,255,255,${0.4 * hlIntensity})`);
+      hlEdge.addColorStop(1, 'rgba(255,255,255,0)');
+      cctx.fillStyle = hlEdge;
+      cctx.beginPath();
+      cctx.ellipse(px + r * 0.3, py + r * 0.3, r * 0.35, r * 0.35, 0, 0, Math.PI * 2);
+      cctx.fill();
+
+      cctx.restore();
+
+      cctx.save();
+      cctx.globalAlpha = 0.12 + Math.sin(time * 0.7 + x * 0.1) * 0.05;
+      const refGrad = cctx.createRadialGradient(px, py, r * 0.3, px, py, r * 1.8);
+      refGrad.addColorStop(0, 'rgba(180,255,220,0.25)');
+      refGrad.addColorStop(0.5, 'rgba(100,240,200,0.08)');
+      refGrad.addColorStop(1, 'rgba(30,215,155,0)');
+      cctx.fillStyle = refGrad;
+      cctx.beginPath();
+      cctx.arc(px, py, r * 1.8, 0, Math.PI * 2);
+      cctx.fill();
+      cctx.restore();
+    }
+
+    function drawMist(time) {
+      cctx.save();
+      cctx.globalAlpha = 0.06 + Math.sin(time * 0.3) * 0.03;
+      const mistGrad = cctx.createRadialGradient(CW / 2, CH / 2, 0, CW / 2, CH / 2, 100 + Math.sin(time * 0.5) * 15);
+      mistGrad.addColorStop(0, 'rgba(200,255,235,0.08)');
+      mistGrad.addColorStop(1, 'rgba(200,255,235,0)');
+      cctx.fillStyle = mistGrad;
+      cctx.fillRect(0, 0, CW, CH);
+      cctx.restore();
+    }
+
+    function drawWaterRipples(time) {
+      cctx.save();
+      cctx.globalAlpha = 0.03;
+      cctx.strokeStyle = 'rgba(200,255,235,0.8)';
+      cctx.lineWidth = 0.8;
+      for (let i = 0; i < 8; i++) {
+        const phase = i * 0.8 + time * 0.2;
+        const sx = CW / 2 + Math.sin(phase) * 40;
+        const sy = CH / 2 + Math.cos(phase * 0.7) * 30;
+        cctx.beginPath();
+        cctx.moveTo(sx, sy);
+        cctx.bezierCurveTo(
+          sx + Math.sin(phase + 0.5) * 30, sy + Math.cos(phase + 0.3) * 20,
+          sx + Math.sin(phase + 1.0) * 25, sy + Math.cos(phase + 0.6) * 25,
+          sx + Math.sin(phase + 1.5) * 15, sy + Math.cos(phase + 0.9) * 30
+        );
+        cctx.stroke();
+      }
+      cctx.restore();
+    }
+
+    function animateDroplets(time) {
+      cctx.clearRect(0, 0, CW, CH);
+
+      liveDrops.forEach(d => {
+        drawLiveDroplet(d.bx, d.by, d.br, d.o, d.trail, time + d.phase);
+      });
+
+      microDrops.forEach(m => {
+        m.x += m.speedX + Math.sin(time * 0.5 + m.phase) * 0.2;
+        m.y += m.speedY;
+        if (m.y > CH + 5) { m.y = -5; m.x = Math.random() * CW; }
+        if (m.x < -5) m.x = CW + 5;
+        if (m.x > CW + 5) m.x = -5;
+
+        const breath = 1 + Math.sin(time * 1.2 + m.phase) * 0.15;
+        const mr = m.r * breath;
+        const ma = m.alpha * (0.5 + Math.sin(time * 0.7 + m.phase) * 0.5);
+
+        cctx.save();
+        cctx.globalAlpha = ma;
+        const grad = cctx.createRadialGradient(m.x, m.y, 0, m.x, m.y, mr);
+        grad.addColorStop(0, 'rgba(220,255,245,0.9)');
+        grad.addColorStop(0.3, 'rgba(180,255,230,0.5)');
+        grad.addColorStop(1, 'rgba(100,230,190,0)');
+        cctx.fillStyle = grad;
+        cctx.beginPath();
+        cctx.arc(m.x, m.y, mr, 0, Math.PI * 2);
+        cctx.fill();
+        cctx.restore();
+      });
+
+      drawMist(time);
+      drawWaterRipples(time);
+
+      requestAnimationFrame(animateDroplets);
+    }
+
+    setTimeout(() => {
+      animateDroplets(0);
+    }, 3800);
+
+    setTimeout(() => {
+      playWaterSound();
+      playDistantDrone();
+      playDistantMelody();
+      if (ctx.state === "suspended") ctx.resume();
+    }, 0);
+
+    setTimeout(() => { playVortexSound(); }, 3800);
+    setTimeout(() => { playSplash(); }, 4000);
+    setTimeout(() => { playChime(); }, 4200);
+    setTimeout(() => { playWaterFlow(); }, 4800);
+    setTimeout(() => { playWaterFlow(); }, 5200);
+    setTimeout(() => { playFinalMelody(); }, 6000);
+  </script>
+</body>
+</html>

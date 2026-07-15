@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="emerald_accent">#FF00C853</color>
+    <color name="emerald_background">#FFF5F5F5</color>
+    <color name="emerald_error">#FFD32F2F</color>
+    <color name="emerald_on_background">#FF212121</color>
+    <color name="emerald_on_primary">#FFFFFFFF</color>
+    <color name="emerald_on_surface">#FF212121</color>
+    <color name="emerald_primary">#FF2E7D32</color>
+    <color name="emerald_primary_dark">#FF1B5E20</color>
+    <color name="emerald_primary_light">#FF60AD5E</color>
+    <color name="emerald_surface">#FFFFFFFF</color>
+    <string name="app_name">Emerald</string>
+    <string name="email_label">Email</string>
+    <string name="have_account">Вже є акаунт? Увійти</string>
+    <string name="login_button">Увійти</string>
+    <string name="login_error">Невірний email або пароль</string>
+    <string name="login_title">Emerald Account</string>
+    <string name="logout_button">Вийти</string>
+    <string name="no_account">Немає акаунту? Зареєструватися</string>
+    <string name="password_label">Пароль</string>
+    <string name="register_button">Зареєструватися</string>
+    <string name="register_error">Помилка реєстрації</string>
+    <string name="welcome_message">Ласкаво просимо до Emerald</string>
+    <style name="Theme.EmeraldApp" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:colorPrimary">@color/emerald_primary</item>
+        <item name="android:colorPrimaryDark">@color/emerald_primary_dark</item>
+        <item name="android:colorAccent">@color/emerald_accent</item>
+        <item name="android:statusBarColor">@color/emerald_primary_dark</item>
+    </style>
+</resources>

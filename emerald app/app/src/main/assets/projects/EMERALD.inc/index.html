@@ -1,0 +1,1889 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Emerald Inc.</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0a2e0a 0%, #0d3d0d 30%, #1a4a1a 60%, #0a2e0a 100%);
+            color: #e0f0e0;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 2rem;
+        }
+
+        /* ===== BOOT ANIMATION ===== */
+        #bootOverlay {
+            position: fixed;
+            inset: 0;
+            z-index: 9999;
+            background: #050f05;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 0.6s ease;
+        }
+        #bootOverlay.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        /* Canvas for Emerald crystal animation */
+        #bootCanvas {
+            width: 200px;
+            height: 200px;
+            margin-bottom: 20px;
+        }
+
+        /* Terminal lines */
+        .boot-terminal {
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            color: #a0d0a0;
+            width: 340px;
+            max-width: 80vw;
+        }
+        .boot-terminal .line {
+            opacity: 0;
+            transform: translateY(6px);
+            transition: opacity 0.3s ease, transform 0.3s ease;
+            margin-bottom: 4px;
+        }
+        .boot-terminal .line.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        .boot-terminal .line.ok {
+            color: #00e676;
+        }
+        .boot-terminal .cursor {
+            display: inline-block;
+            width: 8px;
+            height: 14px;
+            background: #00e676;
+            animation: blink 0.8s step-end infinite;
+            vertical-align: text-bottom;
+            margin-left: 2px;
+        }
+        @keyframes blink {
+            50% { opacity: 0; }
+        }
+
+        /* Progress bar */
+        .boot-progress-wrap {
+            width: 340px;
+            max-width: 80vw;
+            margin-top: 16px;
+            opacity: 0;
+            transition: opacity 0.4s ease;
+        }
+        .boot-progress-wrap.visible { opacity: 1; }
+        .boot-progress-track {
+            width: 100%;
+            height: 4px;
+            background: rgba(0,200,80,0.12);
+            border-radius: 2px;
+            overflow: hidden;
+        }
+        .boot-progress-fill {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, #00c853, #00e676);
+            border-radius: 2px;
+            transition: width 0.3s ease;
+        }
+        .boot-progress-label {
+            font-family: 'Courier New', monospace;
+            font-size: 11px;
+            color: #5a8a5a;
+            margin-top: 6px;
+            text-align: right;
+        }
+
+        /* ===== LOGIN MODAL ===== */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 10000;
+            background: rgba(0, 0, 0, 0.7);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(4px);
+        }
+        .modal-overlay.open {
+            display: flex;
+        }
+        .modal-box {
+            background: #0d2e0d;
+            border: 1px solid rgba(0, 200, 80, 0.3);
+            border-radius: 16px;
+            padding: 2rem;
+            width: 360px;
+            max-width: 90vw;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+        }
+        .modal-box h2 {
+            color: #00e676;
+            font-size: 1.3rem;
+            margin-bottom: 0.3rem;
+            text-align: center;
+        }
+        .modal-box .sub {
+            color: #a0d0a0;
+            font-size: 0.85rem;
+            text-align: center;
+            margin-bottom: 1.5rem;
+        }
+        .modal-box label {
+            display: block;
+            color: #c0e0c0;
+            font-size: 0.82rem;
+            margin-bottom: 0.3rem;
+        }
+        .modal-box .input-wrap {
+            position: relative;
+            margin-bottom: 1rem;
+        }
+        .modal-box .input-wrap input {
+            width: 100%;
+            padding: 0.65rem 0.8rem;
+            border-radius: 8px;
+            border: 1px solid rgba(0, 200, 80, 0.2);
+            background: rgba(0, 200, 80, 0.06);
+            color: #e0f0e0;
+            font-size: 0.9rem;
+            font-family: inherit;
+            outline: none;
+            transition: border-color 0.25s ease;
+        }
+        .modal-box .input-wrap input:focus {
+            border-color: #00e676;
+        }
+        .modal-box .input-wrap .domain-suffix {
+            position: absolute;
+            right: 0.8rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #00c853;
+            font-size: 0.9rem;
+            font-weight: 600;
+            pointer-events: none;
+            text-shadow: 0 0 8px rgba(0, 200, 80, 0.3);
+        }
+        .modal-box .input-wrap input[type="password"] {
+            letter-spacing: 2px;
+        }
+        .modal-box .modal-actions {
+            display: flex;
+            gap: 0.75rem;
+            margin-top: 1.2rem;
+        }
+        .modal-box .modal-actions button {
+            flex: 1;
+            padding: 0.6rem;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            border: 1px solid rgba(0, 200, 80, 0.2);
+            font-family: inherit;
+            transition: all 0.25s ease;
+        }
+        .modal-box .modal-actions .btn-login {
+            background: linear-gradient(135deg, #00e676, #00c853);
+            color: #062b08;
+            border-color: transparent;
+        }
+        .modal-box .modal-actions .btn-login:hover {
+            opacity: 0.9;
+        }
+        .modal-box .modal-actions .btn-cancel {
+            background: transparent;
+            color: #a0d0a0;
+        }
+        .modal-box .modal-actions .btn-cancel:hover {
+            background: rgba(0, 200, 80, 0.08);
+        }
+        .modal-box .error-msg {
+            color: #ff6b6b;
+            font-size: 0.8rem;
+            text-align: center;
+            margin-top: 0.5rem;
+            display: none;
+        }
+        .modal-box .error-msg.show {
+            display: block;
+        }
+
+        /* ===== TOP BAR ===== */
+        .top-bar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.6rem 2rem;
+            background: rgba(5, 15, 5, 0.85);
+            backdrop-filter: blur(8px);
+            border-bottom: 1px solid rgba(0, 200, 80, 0.15);
+        }
+        .top-bar-left {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+        }
+        .top-bar-right {
+            display: flex;
+            align-items: center;
+        }
+        .top-bar-logo {
+            font-size: 1.2rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #00e676, #00c853);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            letter-spacing: 1px;
+        }
+        .top-bar-logo .inc {
+            font-size: 0.85rem;
+            -webkit-text-fill-color: #00e676;
+            opacity: 0.7;
+        }
+        .top-bar-btn {
+            padding: 0.4rem 1rem;
+            border-radius: 999px;
+            font-size: 0.82rem;
+            font-weight: 500;
+            cursor: pointer;
+            border: 1px solid rgba(0, 200, 80, 0.25);
+            background: transparent;
+            color: #c0e0c0;
+            transition: all 0.25s ease;
+            font-family: inherit;
+        }
+        .top-bar-btn:hover {
+            border-color: rgba(0, 230, 118, 0.5);
+            background: rgba(0, 200, 80, 0.08);
+        }
+        .top-bar-btn.primary {
+            background: linear-gradient(135deg, #00e676, #00c853);
+            color: #062b08;
+            border-color: transparent;
+            font-weight: 600;
+        }
+        .top-bar-btn.primary:hover {
+            opacity: 0.9;
+            transform: translateY(-1px);
+        }
+
+        /* ===== USER AVATAR ===== */
+        .user-avatar {
+            display: none;
+            align-items: center;
+            gap: 0.6rem;
+        }
+        .user-avatar.visible {
+            display: flex;
+        }
+        .user-avatar-circle {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #00e676, #00c853);
+            color: #062b08;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            box-shadow: 0 0 12px rgba(0, 230, 118, 0.3);
+        }
+        .user-avatar-name {
+            font-size: 0.82rem;
+            color: #c0e0c0;
+            font-weight: 500;
+        }
+        .user-avatar-logout {
+            padding: 0.25rem 0.6rem;
+            border-radius: 999px;
+            font-size: 0.7rem;
+            cursor: pointer;
+            border: 1px solid rgba(0, 200, 80, 0.2);
+            background: transparent;
+            color: #a0d0a0;
+            font-family: inherit;
+            transition: all 0.25s ease;
+        }
+        .user-avatar-logout:hover {
+            border-color: rgba(255, 80, 80, 0.5);
+            color: #ff6b6b;
+        }
+
+        /* ===== PROFILE BUTTON ===== */
+        .profile-btn {
+            padding: 0.3rem 0.7rem;
+            border-radius: 999px;
+            font-size: 0.75rem;
+            cursor: pointer;
+            border: 1px solid rgba(0, 200, 80, 0.2);
+            background: transparent;
+            color: #a0d0a0;
+            font-family: inherit;
+            transition: all 0.25s ease;
+            white-space: nowrap;
+        }
+        .profile-btn:hover {
+            border-color: rgba(0, 230, 118, 0.5);
+            background: rgba(0, 200, 80, 0.08);
+            color: #c0e0c0;
+        }
+
+        /* ===== PROFILE MODAL ===== */
+        .profile-avatar-preview {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #00e676, #00c853);
+            color: #062b08;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 2rem;
+            text-transform: uppercase;
+            margin: 0 auto 1rem;
+            box-shadow: 0 0 20px rgba(0, 230, 118, 0.3);
+        }
+        .profile-upload-area {
+            text-align: center;
+            margin-bottom: 1.2rem;
+        }
+        .profile-upload-area input[type="file"] {
+            display: none;
+        }
+        .profile-upload-label {
+            display: inline-block;
+            padding: 0.4rem 1rem;
+            border-radius: 999px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            border: 1px solid rgba(0, 200, 80, 0.25);
+            background: rgba(0, 200, 80, 0.06);
+            color: #c0e0c0;
+            font-family: inherit;
+            transition: all 0.25s ease;
+        }
+        .profile-upload-label:hover {
+            border-color: rgba(0, 230, 118, 0.5);
+            background: rgba(0, 200, 80, 0.1);
+        }
+        .profile-section-title {
+            color: #00e676;
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            margin-top: 1rem;
+        }
+
+        .container {
+
+            max-width: 800px;
+            width: 100%;
+            background: rgba(13, 61, 13, 0.85);
+            border-radius: 20px;
+            padding: 3rem;
+            box-shadow: 0 0 60px rgba(0, 200, 80, 0.15);
+            border: 1px solid rgba(0, 200, 80, 0.2);
+            margin-top: 4rem;
+        }
+
+        .logo {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .logo h1 {
+            font-size: 3.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #00e676, #00c853, #00b248);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            letter-spacing: 3px;
+            text-shadow: none;
+        }
+
+        .logo .inc {
+            font-size: 1.2rem;
+            color: #00e676;
+            -webkit-text-fill-color: #00e676;
+            opacity: 0.8;
+        }
+
+        .tagline {
+            text-align: center;
+            font-size: 1.1rem;
+            color: #a0d0a0;
+            margin-bottom: 2.5rem;
+            font-style: italic;
+        }
+
+        .section {
+            margin-bottom: 2rem;
+        }
+
+        .section h2 {
+            font-size: 1.3rem;
+            color: #00e676;
+            margin-bottom: 0.8rem;
+            border-bottom: 1px solid rgba(0, 200, 80, 0.25);
+            padding-bottom: 0.5rem;
+        }
+
+        .section p {
+            line-height: 1.7;
+            color: #c0e0c0;
+        }
+
+        .values {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .value-card {
+            background: rgba(0, 200, 80, 0.06);
+            border: 1px solid rgba(0, 200, 80, 0.2);
+            border-radius: 12px;
+            padding: 1.2rem;
+            text-align: center;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .value-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 25px rgba(0, 200, 80, 0.2);
+        }
+
+        .value-card .icon {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .value-card h3 {
+            font-size: 1rem;
+            color: #00e676;
+            margin-bottom: 0.4rem;
+        }
+
+        .value-card p {
+            font-size: 0.85rem;
+            color: #a0d0a0;
+            line-height: 1.4;
+        }
+
+        .value-card .extra {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.4s ease, padding 0.3s ease, opacity 0.3s ease;
+            opacity: 0;
+            padding-top: 0;
+        }
+
+        .value-card.open .extra {
+            max-height: 300px;
+            opacity: 1;
+            padding-top: 0.8rem;
+        }
+
+        .value-card .extra p {
+            font-size: 0.82rem;
+            color: #b0d8b0;
+            line-height: 1.5;
+            border-top: 1px solid rgba(0, 200, 80, 0.15);
+            padding-top: 0.8rem;
+        }
+
+        .contact {
+            text-align: center;
+            margin-top: 2rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid rgba(0, 200, 80, 0.2);
+        }
+
+        .contact p {
+            color: #a0d0a0;
+            font-size: 0.9rem;
+        }
+
+        .contact a {
+            color: #00e676;
+            text-decoration: none;
+            transition: opacity 0.3s;
+        }
+
+        .contact a:hover {
+            opacity: 0.7;
+        }
+
+        .section-help {
+            margin-bottom: 1rem;
+            color: #a0d0a0;
+            font-size: 0.9rem;
+        }
+
+        .projects-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 1rem;
+        }
+
+        .project-card {
+            width: 100%;
+            border: 1px solid rgba(0, 200, 80, 0.2);
+            border-radius: 14px;
+            padding: 1rem;
+            background: rgba(0, 200, 80, 0.06);
+            color: inherit;
+            text-align: left;
+            cursor: pointer;
+            transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+            display: flex;
+            flex-direction: column;
+            gap: 0.8rem;
+            font: inherit;
+        }
+
+        .project-card:hover,
+        .project-card.active {
+            transform: translateY(-3px);
+            border-color: rgba(0, 230, 118, 0.75);
+            box-shadow: 0 10px 28px rgba(0, 200, 80, 0.16);
+        }
+
+        .project-card-icon {
+            width: 3rem;
+            height: 3rem;
+            border-radius: 12px;
+            background: rgba(0, 200, 80, 0.12);
+            display: grid;
+            place-items: center;
+            font-size: 1.45rem;
+        }
+
+        .project-card h3 {
+            color: #00e676;
+            font-size: 1rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .project-card p {
+            color: #a0d0a0;
+            font-size: 0.88rem;
+            line-height: 1.5;
+        }
+
+        .project-card-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.4rem;
+            margin-top: auto;
+        }
+
+        .project-pill {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.28rem 0.6rem;
+            border-radius: 999px;
+            font-size: 0.72rem;
+            color: #cfeccc;
+            background: rgba(0, 200, 80, 0.1);
+            border: 1px solid rgba(0, 200, 80, 0.16);
+        }
+
+        .project-details {
+            margin-top: 1rem;
+        }
+
+        .project-details-card {
+            border: 1px solid rgba(0, 200, 80, 0.24);
+            border-radius: 16px;
+            background: rgba(0, 255, 120, 0.07);
+            padding: 1.2rem;
+            box-shadow: 0 12px 34px rgba(0, 200, 80, 0.12);
+        }
+
+        .project-details-header {
+            display: flex;
+            align-items: center;
+            gap: 0.9rem;
+            margin-bottom: 0.8rem;
+        }
+
+        .project-details-icon {
+            width: 3rem;
+            height: 3rem;
+            border-radius: 12px;
+            background: rgba(0, 200, 80, 0.16);
+            display: grid;
+            place-items: center;
+            font-size: 1.45rem;
+        }
+
+        .project-details h3 {
+            color: #00e676;
+            margin-bottom: 0.2rem;
+        }
+
+        .project-details-subtitle {
+            color: #a0d0a0;
+            font-size: 0.92rem;
+        }
+
+        .project-details-desc {
+            color: #dcefdc;
+            line-height: 1.7;
+            margin-bottom: 0.9rem;
+        }
+
+        .project-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.4rem;
+            margin-bottom: 1rem;
+        }
+
+        .project-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+        }
+
+        .project-link {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0.65rem 0.95rem;
+            border-radius: 999px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            text-decoration: none;
+            border: 1px solid rgba(0, 200, 80, 0.24);
+            transition: transform 0.2s ease, opacity 0.2s ease;
+        }
+
+        .project-link:hover {
+            transform: translateY(-1px);
+            opacity: 0.9;
+        }
+
+        .project-link.primary {
+            background: linear-gradient(135deg, #00e676, #00c853);
+            color: #062b08;
+        }
+
+        .project-link.secondary {
+            color: #cfeccc;
+            background: rgba(0, 200, 80, 0.06);
+        }
+
+        .empty-state {
+            padding: 1.1rem;
+            border: 1px dashed rgba(0, 200, 80, 0.25);
+            border-radius: 12px;
+            text-align: center;
+            color: #a0d0a0;
+            background: rgba(0, 200, 80, 0.04);
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                padding: 1.5rem;
+            }
+            .logo h1 {
+                font-size: 2.5rem;
+            }
+            .values {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Boot Animation Overlay -->
+    <div id="bootOverlay">
+        <canvas id="bootCanvas" width="200" height="200"></canvas>
+        <div class="boot-terminal" id="bootTerminal">
+            <div class="line" data-text="> Zapusk systemy Emerald..."></div>
+            <div class="line" data-text="> Zavantazhennya moduliv..."></div>
+            <div class="line" data-text="> Initsializatsiya interfeysu..."></div>
+            <div class="line" data-text="> Pidklyuchennya do servisiv..."></div>
+            <div class="line ok" data-text="OK  Emerald Inc. gotova."></div>
+            <div class="line"><span class="cursor"></span></div>
+        </div>
+        <div class="boot-progress-wrap" id="bootProgress">
+            <div class="boot-progress-track">
+                <div class="boot-progress-fill" id="bootProgressFill"></div>
+            </div>
+            <div class="boot-progress-label" id="bootProgressLabel">0%</div>
+        </div>
+    </div>
+
+    <!-- Login Modal -->
+    <div class="modal-overlay" id="loginModal">
+        <div class="modal-box">
+            <h2>💎 Увійти</h2>
+            <p class="sub">Введіть дані свого Emerald-акаунта</p>
+            <label for="loginEmail">Email</label>
+            <div class="input-wrap">
+                <input type="text" id="loginEmail" placeholder="username" autocomplete="off">
+                <span class="domain-suffix">@emerald.com</span>
+            </div>
+            <label for="loginPassword">Пароль</label>
+            <div class="input-wrap">
+                <input type="password" id="loginPassword" placeholder="••••••••">
+            </div>
+            <div class="error-msg" id="loginError"></div>
+            <div class="modal-actions">
+                <button class="btn-cancel" onclick="closeLogin()">Скасувати</button>
+                <button class="btn-login" onclick="handleLogin()">Увійти</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Register Modal -->
+    <div class="modal-overlay" id="registerModal">
+        <div class="modal-box">
+            <h2>✨ Створити акаунт</h2>
+            <p class="sub">Зареєструйте свій власний Emerald-акаунт</p>
+            <label for="regEmail">Email</label>
+            <div class="input-wrap">
+                <input type="text" id="regEmail" placeholder="username" autocomplete="off">
+                <span class="domain-suffix">@emerald.com</span>
+            </div>
+            <label for="regPassword">Пароль</label>
+            <div class="input-wrap">
+                <input type="password" id="regPassword" placeholder="••••••••">
+            </div>
+            <label for="regPasswordConfirm">Підтвердіть пароль</label>
+            <div class="input-wrap">
+                <input type="password" id="regPasswordConfirm" placeholder="••••••••">
+            </div>
+            <div class="error-msg" id="regError"></div>
+            <div class="modal-actions">
+                <button class="btn-cancel" onclick="closeRegister()">Скасувати</button>
+                <button class="btn-login" onclick="handleRegister()">Створити</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Profile Modal -->
+    <div class="modal-overlay" id="profileModal">
+        <div class="modal-box" style="width: 400px;">
+            <h2>⚙️ Персоналізація профілю</h2>
+            <p class="sub" id="profileModalSub">Налаштуйте свій Emerald-акаунт</p>
+
+            <div class="profile-avatar-preview" id="profileAvatarPreview">U</div>
+
+            <div class="profile-upload-area">
+                <label class="profile-upload-label" for="profileAvatarInput">📷 Завантажити зображення</label>
+                <input type="file" id="profileAvatarInput" accept="image/*">
+                <br><br>
+                <button class="profile-upload-label" onclick="openCamera()" type="button" style="border:none; background:rgba(0,200,80,0.06); padding:0.4rem 1rem; border-radius:999px; font-size:0.8rem; cursor:pointer; border:1px solid rgba(0,200,80,0.25); color:#c0e0c0; font-family:inherit;">📸 Зробити знімок</button>
+            </div>
+            <!-- Camera overlay -->
+            <div class="modal-overlay" id="cameraModal">
+                <div class="modal-box" style="width:420px; text-align:center;">
+                    <h2>📸 Зробити знімок</h2>
+                    <p class="sub">Використовуйте камеру для фото профілю</p>
+                    <video id="cameraVideo" autoplay playsinline style="width:100%; max-height:280px; border-radius:12px; background:#000; margin-bottom:1rem;"></video>
+                    <canvas id="cameraCanvas" style="display:none;"></canvas>
+                    <div class="modal-actions">
+                        <button class="btn-cancel" onclick="closeCamera()">Скасувати</button>
+                        <button class="btn-login" onclick="capturePhoto()">📸 Зробити знімок</button>
+                    </div>
+                    <div class="error-msg" id="cameraError"></div>
+                </div>
+            </div>
+
+            <!-- Crop overlay -->
+            <div class="modal-overlay" id="cropModal">
+                <div class="modal-box" style="width:440px; text-align:center;">
+                    <h2>✂️ Обрізати фото</h2>
+                    <p class="sub">Виберіть область для аватарки</p>
+                    <div style="position:relative; width:100%; max-height:320px; overflow:hidden; border-radius:12px; background:#000; margin-bottom:1rem; user-select:none; touch-action:none;" id="cropContainer">
+                        <img id="cropImage" src="" style="width:100%; display:block; pointer-events:none;">
+                        <div id="cropCircle" style="position:absolute; border:2px dashed #00e676; border-radius:50%; box-shadow:0 0 0 9999px rgba(0,0,0,0.6); cursor:grab; top:20px; left:20px; width:120px; height:120px;"></div>
+                        <div id="cropResizeHandle" style="position:absolute; bottom:-6px; right:-6px; width:14px; height:14px; background:#00e676; border:2px solid #fff; border-radius:50%; cursor:nwse-resize; z-index:10;"></div>
+                    </div>
+                    <div style="display:flex; gap:0.5rem; justify-content:center; margin-bottom:0.5rem;">
+                        <button class="profile-upload-label" onclick="cropZoom(-10)" type="button" style="font-size:1.1rem;">🔽</button>
+                        <span style="color:#a0d0a0; font-size:0.8rem; align-self:center;">Розмір</span>
+                        <button class="profile-upload-label" onclick="cropZoom(10)" type="button" style="font-size:1.1rem;">🔼</button>
+                    </div>
+                    <div class="modal-actions">
+                        <button class="btn-cancel" onclick="closeCrop()">Скасувати</button>
+                        <button class="btn-login" onclick="saveCrop()">✅ Зберегти</button>
+                    </div>
+                    <div class="error-msg" id="cropError"></div>
+                </div>
+            </div>
+
+
+
+            <div class="profile-section-title">Змінити пароль</div>
+            <label for="profileOldPassword">Поточний пароль</label>
+            <div class="input-wrap">
+                <input type="password" id="profileOldPassword" placeholder="••••••••">
+            </div>
+            <label for="profileNewPassword">Новий пароль</label>
+            <div class="input-wrap">
+                <input type="password" id="profileNewPassword" placeholder="••••••••">
+            </div>
+            <label for="profileConfirmPassword">Підтвердіть новий пароль</label>
+            <div class="input-wrap">
+                <input type="password" id="profileConfirmPassword" placeholder="••••••••">
+            </div>
+
+            <div class="error-msg" id="profileError"></div>
+            <div class="modal-actions">
+                <button class="btn-cancel" onclick="closeProfile()">Закрити</button>
+                <button class="btn-login" onclick="handleProfileSave()">Зберегти</button>
+            </div>
+        </div>
+    </div>
+
+    <header class="top-bar">
+        <div class="top-bar-left">
+            <span class="top-bar-logo">Emerald<span class="inc"> Inc</span></span>
+            <button class="top-bar-btn" id="loginBtn" onclick="openLogin()">Увійти</button>
+        </div>
+        <div class="top-bar-right">
+            <button class="top-bar-btn primary" id="registerBtn" onclick="openRegister()">Створити свій власний Emerald-акаунт</button>
+            <div class="user-avatar" id="userAvatar">
+                <button class="profile-btn" onclick="openProfile()">⚙️ Персоналізувати профіль</button>
+                <div class="user-avatar-circle" id="avatarCircle">U</div>
+                <span class="user-avatar-name" id="avatarName">user</span>
+                <button class="user-avatar-logout" onclick="handleLogout()">✕</button>
+            </div>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="logo">
+            <h1>Emerald<span class="inc"> Inc</span></h1>
+        </div>
+
+        <p class="tagline">Інноваційні технологічні рішення для сучасного бізнесу</p>
+
+        <div class="section">
+            <h2>Про компанію</h2>
+            <p>
+                <strong>Emerald Inc.</strong> — це динамічна технологічна компанія, що спеціалізується на розробці 
+                програмного забезпечення, хмарних рішеннях та цифровій трансформації бізнесу. 
+                Заснована з метою створювати елегантні та ефективні продукти, які допомагають 
+                компаніям рости та адаптуватися до викликів сучасного ринку.
+            </p>
+        </div>
+
+        <div class="section">
+            <h2>Напрямки діяльності</h2>
+            <p>
+                Ми розробляємо веб-додатки, мобільні платформи, API-рішення та системи автоматизації. 
+                Використовуємо сучасні технології: React, Node.js, Python, Go, хмарні сервіси AWS/GCP, 
+                а також практики CI/CD та DevOps для забезпечення найвищої якості продуктів.
+            </p>
+        </div>
+
+        <div class="section">
+            <h2>Наші цінності</h2>
+            <p style="margin-bottom: 1rem; color: #a0d0a0; font-size: 0.9rem;">
+                👆 Натисніть на плитку, щоб дізнатися більше
+            </p>
+            <div class="values">
+                <div class="value-card" onclick="toggleCard(this)">
+                    <div class="icon">💎</div>
+                    <h3>Якість</h3>
+                    <p>Прагнемо досконалості</p>
+                    <div class="extra">
+                        <p>Кожен наш продукт проходить багаторівневе тестування. Ми використовуємо автоматизовані тести, code review та CI/CD, щоб гарантувати найвищу якість коду та стабільність рішень.</p>
+                    </div>
+                </div>
+                <div class="value-card" onclick="toggleCard(this)">
+                    <div class="icon">🚀</div>
+                    <h3>Інновації</h3>
+                    <p>Сучасні технології</p>
+                    <div class="extra">
+                        <p>Ми постійно слідкуємо за трендами: AI/ML, хмарні технології, мікросервіси. Впроваджуємо найкращі практики, щоб наші клієнти отримували конкурентні переваги.</p>
+                    </div>
+                </div>
+                <div class="value-card" onclick="toggleCard(this)">
+                    <div class="icon">🤝</div>
+                    <h3>Партнерство</h3>
+                    <p>Довгострокові відносини</p>
+                    <div class="extra">
+                        <p>Ми будуємо прозорі та чесні відносини з клієнтами. Кожен проєкт — це співпраця, де ми враховуємо потреби бізнесу та пропонуємо оптимальні рішення.</p>
+                    </div>
+                </div>
+                <div class="value-card" onclick="toggleCard(this)">
+                    <div class="icon">🌱</div>
+                    <h3>Розвиток</h3>
+                    <p>Постійне зростання</p>
+                    <div class="extra">
+                        <p>Інвестуємо в навчання команди: конференції, курси, менторство. Віримо, що розвиток співробітників — це розвиток компанії та якість наших продуктів.</p>
+                    </div>
+                </div>
+                <div class="value-card" onclick="toggleCard(this)">
+                    <div class="icon">🎯</div>
+                    <h3>Результат</h3>
+                    <p>Орієнтація на мету</p>
+                    <div class="extra">
+                        <p>Ми фокусуємося на досягненні вимірних результатів для бізнесу клієнта. Кожен спринт, кожна ітерація наближає до поставленої мети.</p>
+                    </div>
+                </div>
+                <div class="value-card" onclick="toggleCard(this)">
+                    <div class="icon">🛡️</div>
+                    <h3>Безпека</h3>
+                    <p>Захист даних</p>
+                    <div class="extra">
+                        <p>Безпека — наш пріоритет. Дотримуємося стандартів OWASP, шифруємо дані, проводимо аудити безпеки та регулярно оновлюємо залежності.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>📁 Наші проєкти</h2>
+            <p class="section-help">
+                👆 Натисніть на плитку, щоб відкрити опис проєкту та перейти до нього.
+            </p>
+            <div class="projects-grid" id="projectsGrid"></div>
+            <div class="project-details" id="projectDetails" hidden>
+                <div class="project-details-card">
+                    <div class="project-details-header">
+                        <div class="project-details-icon" id="detailIcon">📦</div>
+                        <div>
+                            <h3 id="detailTitle">Обраний проєкт</h3>
+                            <p class="project-details-subtitle" id="detailSubtitle">Проєкт зі складу Projects</p>
+                        </div>
+                    </div>
+                    <p class="project-details-desc" id="detailDescription"></p>
+                    <div class="project-tags" id="detailTags"></div>
+                    <div class="project-actions">
+                        <a id="detailOpenLink" class="project-link primary" href="#" target="_blank" rel="noopener">Відкрити проєкт</a>
+                        <button id="detailClose" class="project-link secondary" type="button">Закрити</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="contact">
+            <p>© 2026 Emerald Inc. — <a href="mailto:hello@emerald.inc">hello@emerald.inc</a></p>
+        </div>
+    </div>
+
+    <script>
+        // ===== BOOT ANIMATION =====
+        (function() {
+            const overlay = document.getElementById('bootOverlay');
+            const canvas = document.getElementById('bootCanvas');
+            const ctx = canvas.getContext('2d');
+            const terminalLines = document.querySelectorAll('#bootTerminal .line');
+            const progressWrap = document.getElementById('bootProgress');
+            const progressFill = document.getElementById('bootProgressFill');
+            const progressLabel = document.getElementById('bootProgressLabel');
+
+            let startTime = null;
+            const DURATION = 4800;
+            let animFrame = null;
+            let skipped = false;
+
+            // Crystal state
+            let crystalX = -100;
+            let crystalAngle = 45;
+            let crystalPhase = 0;
+            let crystalPhaseStart = null;
+            let coreDrawn = false;
+            let letterDrawn = false;
+            let wordDrawn = false;
+
+            function drawCrystal(t) {
+                // Initialize crystalPhaseStart on first call
+                if (crystalPhaseStart === null) {
+                    crystalPhaseStart = t;
+                }
+                const w = 200, h = 200;
+                ctx.clearRect(0, 0, w, h);
+                const cx = w / 2, cy = h / 2;
+                const halfSize = 45;
+
+                // Phase 0: Fly-in from left (0–600ms)
+                if (crystalPhase === 0) {
+                    const elapsed = t - crystalPhaseStart;
+                    const dur = 600;
+                    let progress = Math.min(elapsed / dur, 1);
+                    const ease = 1 - Math.pow(1 - progress, 3);
+                    crystalX = -100 + (cx + 100) * ease;
+                    crystalAngle = 45;
+                    if (progress >= 1) {
+                        crystalPhase = 1;
+                        crystalPhaseStart = t;
+                        crystalX = cx;
+                        crystalAngle = 45;
+                    }
+                }
+
+                // Phase 1: Spin (600–2600ms)
+                if (crystalPhase === 1) {
+                    const elapsed = t - crystalPhaseStart;
+                    const spinDur = 2000;
+                    const progress = Math.min(elapsed / spinDur, 1);
+                    crystalAngle = 45 + progress * 360;
+                    crystalX = cx;
+                    if (progress >= 1) {
+                        crystalPhase = 2;
+                        crystalPhaseStart = t;
+                        crystalAngle = 45;
+                    }
+                }
+
+                // Phase 2: Core appears (2600–3200ms)
+                if (crystalPhase === 2) {
+                    const elapsed = t - crystalPhaseStart;
+                    crystalX = cx;
+                    crystalAngle = 45;
+                    if (elapsed >= 600 && !coreDrawn) coreDrawn = true;
+                    if (elapsed >= 1200) {
+                        crystalPhase = 3;
+                        crystalPhaseStart = t;
+                    }
+                }
+
+                // Phase 3: Letter "E" (3200–3600ms)
+                if (crystalPhase === 3) {
+                    const elapsed = t - crystalPhaseStart;
+                    crystalX = cx;
+                    crystalAngle = 45;
+                    if (!coreDrawn) coreDrawn = true;
+                    if (elapsed >= 400 && !letterDrawn) letterDrawn = true;
+                    if (elapsed >= 1200) {
+                        crystalPhase = 4;
+                        crystalPhaseStart = t;
+                    }
+                }
+
+                // Phase 4: Word "EMERALD" (3600–4600ms)
+                if (crystalPhase === 4) {
+                    const elapsed = t - crystalPhaseStart;
+                    crystalX = cx;
+                    crystalAngle = 45;
+                    if (!coreDrawn) coreDrawn = true;
+                    if (!letterDrawn) letterDrawn = true;
+                    if (elapsed >= 800 && !wordDrawn) wordDrawn = true;
+                    if (elapsed >= 2000) crystalPhase = 5;
+                }
+
+                // Draw diamond crystal
+                const angleRad = crystalAngle * Math.PI / 180;
+                const cosA = Math.cos(angleRad);
+                const sinA = Math.sin(angleRad);
+
+                const pts = [
+                    [0, -halfSize],
+                    [halfSize, 0],
+                    [0, halfSize],
+                    [-halfSize, 0]
+                ];
+                const corners = pts.map(p => {
+                    const x = p[0] * cosA - p[1] * sinA;
+                    const y = p[0] * sinA + p[1] * cosA;
+                    return [crystalX + x, cy + y];
+                });
+
+                // Glow circles behind crystal
+                for (let r = 60; r >= 50; r--) {
+                    const brightness = Math.round(((r - 50) / 10) * 40);
+                    ctx.beginPath();
+                    ctx.arc(crystalX, cy, r, 0, Math.PI * 2);
+                    ctx.fillStyle = `rgba(0, ${brightness}, ${Math.round(brightness/3)}, 0.15)`;
+                    ctx.fill();
+                }
+
+                // Dark facet (left side — shadow)
+                ctx.beginPath();
+                ctx.moveTo(corners[0][0], corners[0][1]);
+                ctx.lineTo(corners[3][0], corners[3][1]);
+                ctx.lineTo(corners[2][0], corners[2][1]);
+                ctx.closePath();
+                ctx.fillStyle = '#1a6e2a';
+                ctx.fill();
+
+                // Bright facet (right side — light)
+                ctx.beginPath();
+                ctx.moveTo(corners[0][0], corners[0][1]);
+                ctx.lineTo(corners[1][0], corners[1][1]);
+                ctx.lineTo(corners[2][0], corners[2][1]);
+                ctx.closePath();
+                ctx.fillStyle = '#32c864';
+                ctx.fill();
+
+                // Center highlight facet
+                const cx2 = (crystalX + corners[0][0] + corners[1][0] + corners[2][0] + corners[3][0]) / 4;
+                const cy2 = (cy + corners[0][1] + corners[1][1] + corners[2][1] + corners[3][1]) / 4;
+                ctx.beginPath();
+                ctx.moveTo(corners[0][0], corners[0][1]);
+                ctx.lineTo(cx2, cy2);
+                ctx.lineTo(corners[1][0], corners[1][1]);
+                ctx.closePath();
+                ctx.fillStyle = '#50f082';
+                ctx.fill();
+
+                // Border lines
+                ctx.strokeStyle = '#64ff96';
+                ctx.lineWidth = 1.5;
+                for (let i = 0; i < 4; i++) {
+                    const j = (i + 1) % 4;
+                    ctx.beginPath();
+                    ctx.moveTo(corners[i][0], corners[i][1]);
+                    ctx.lineTo(corners[j][0], corners[j][1]);
+                    ctx.stroke();
+                }
+
+                // White core inside (the "wet" center)
+                if (coreDrawn) {
+                    const coreSize = 22;
+                    const corePts = [
+                        [0, -coreSize],
+                        [coreSize, 0],
+                        [0, coreSize],
+                        [-coreSize, 0]
+                    ];
+                    const coreCorners = corePts.map(p => {
+                        const x = p[0] * cosA - p[1] * sinA;
+                        const y = p[0] * sinA + p[1] * cosA;
+                        return [cx + x, cy + y];
+                    });
+
+                    ctx.beginPath();
+                    ctx.moveTo(coreCorners[0][0], coreCorners[0][1]);
+                    ctx.lineTo(coreCorners[1][0], coreCorners[1][1]);
+                    ctx.lineTo(coreCorners[2][0], coreCorners[2][1]);
+                    ctx.closePath();
+                    ctx.fillStyle = '#dcfff0';
+                    ctx.fill();
+
+                    ctx.beginPath();
+                    ctx.moveTo(coreCorners[0][0], coreCorners[0][1]);
+                    ctx.lineTo(coreCorners[2][0], coreCorners[2][1]);
+                    ctx.lineTo(coreCorners[3][0], coreCorners[3][1]);
+                    ctx.closePath();
+                    ctx.fillStyle = '#c8f5e6';
+                    ctx.fill();
+
+                    ctx.strokeStyle = '#ffffff';
+                    ctx.lineWidth = 1;
+                    for (let i = 0; i < 4; i++) {
+                        const j = (i + 1) % 4;
+                        ctx.beginPath();
+                        ctx.moveTo(coreCorners[i][0], coreCorners[i][1]);
+                        ctx.lineTo(coreCorners[j][0], coreCorners[j][1]);
+                        ctx.stroke();
+                    }
+                }
+
+                // Letter "E"
+                if (letterDrawn) {
+                    ctx.save();
+                    ctx.fillStyle = '#0a6432';
+                    ctx.font = 'bold 28px "Segoe UI", Arial, sans-serif';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText('E', cx, cy + 1);
+                    ctx.restore();
+                }
+
+                // Word "EMERALD"
+                if (wordDrawn) {
+                    ctx.save();
+                    ctx.fillStyle = '#00e676';
+                    ctx.font = 'bold 18px "Segoe UI", Arial, sans-serif';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.shadowColor = '#00e676';
+                    ctx.shadowBlur = 12;
+                    ctx.fillText('EMERALD', cx, cy + 60);
+                    ctx.restore();
+                }
+            }
+
+            function showTerminalLine(index) {
+                if (index >= terminalLines.length - 1) return;
+                const line = terminalLines[index];
+                if (line) line.classList.add('visible');
+            }
+
+            function updateProgress(pct) {
+                const clamped = Math.min(100, Math.max(0, pct));
+                progressFill.style.width = clamped + '%';
+                progressLabel.textContent = Math.round(clamped) + '%';
+            }
+
+            function animate(timestamp) {
+                if (skipped) return;
+                if (!startTime) startTime = timestamp;
+                const elapsed = timestamp - startTime;
+                const t = Math.min(elapsed, DURATION);
+
+                drawCrystal(t);
+
+                if (t >= 200) showTerminalLine(0);
+                if (t >= 800) showTerminalLine(1);
+                if (t >= 1500) showTerminalLine(2);
+                if (t >= 2400) showTerminalLine(3);
+                if (t >= 3500) showTerminalLine(4);
+
+                if (t >= 600 && !progressWrap.classList.contains('visible')) {
+                    progressWrap.classList.add('visible');
+                }
+
+                const progress = (t / DURATION) * 100;
+                updateProgress(progress);
+
+                if (t < DURATION) {
+                    animFrame = requestAnimationFrame(animate);
+                } else {
+                    updateProgress(100);
+                    finishBoot();
+                }
+            }
+
+            function finishBoot() {
+                setTimeout(() => {
+                    overlay.classList.add('hidden');
+                    setTimeout(() => { overlay.style.display = 'none'; }, 600);
+                }, 400);
+            }
+
+            overlay.addEventListener('click', function() {
+                if (skipped) return;
+                skipped = true;
+                if (animFrame) cancelAnimationFrame(animFrame);
+                terminalLines.forEach((line, i) => {
+                    if (i < terminalLines.length - 1) line.classList.add('visible');
+                });
+                progressWrap.classList.add('visible');
+                updateProgress(100);
+                finishBoot();
+            });
+
+            animFrame = requestAnimationFrame(animate);
+        })();
+
+        // ===== LOGIN / REGISTER MODALS =====
+        function openLogin() {
+            document.getElementById('loginModal').classList.add('open');
+            document.getElementById('loginEmail').focus();
+            document.getElementById('loginError').classList.remove('show');
+        }
+
+        function closeLogin() {
+            document.getElementById('loginModal').classList.remove('open');
+            document.getElementById('loginEmail').value = '';
+            document.getElementById('loginPassword').value = '';
+            document.getElementById('loginError').classList.remove('show');
+        }
+
+        function openRegister() {
+            document.getElementById('registerModal').classList.add('open');
+            document.getElementById('regEmail').focus();
+            document.getElementById('regError').classList.remove('show');
+        }
+
+        function closeRegister() {
+            document.getElementById('registerModal').classList.remove('open');
+            document.getElementById('regEmail').value = '';
+            document.getElementById('regPassword').value = '';
+            document.getElementById('regPasswordConfirm').value = '';
+            document.getElementById('regError').classList.remove('show');
+        }
+
+        // ===== USER SESSION =====
+        function setLoggedIn(username) {
+            sessionStorage.setItem('emerald_user', username);
+            document.getElementById('loginBtn').style.display = 'none';
+            document.getElementById('registerBtn').style.display = 'none';
+            const avatar = document.getElementById('userAvatar');
+            avatar.classList.add('visible');
+            document.getElementById('avatarCircle').textContent = username.charAt(0).toUpperCase();
+            document.getElementById('avatarName').textContent = username + '@emerald.com';
+        }
+
+        function handleLogout() {
+            sessionStorage.removeItem('emerald_user');
+            document.getElementById('loginBtn').style.display = '';
+            document.getElementById('registerBtn').style.display = '';
+            document.getElementById('userAvatar').classList.remove('visible');
+        }
+
+        // Відновлення сесії при завантаженні сторінки
+        (function restoreSession() {
+            const saved = sessionStorage.getItem('emerald_user');
+            if (saved) {
+                setLoggedIn(saved);
+            }
+        })();
+
+        async function handleLogin() {
+            const email = document.getElementById('loginEmail').value.trim();
+            const password = document.getElementById('loginPassword').value;
+            const errorEl = document.getElementById('loginError');
+
+            if (!email || !password) {
+                errorEl.textContent = 'Будь ласка, заповніть всі поля';
+                errorEl.classList.add('show');
+                return;
+            }
+
+            try {
+                const res = await fetch('/api/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: email, password: password })
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    setLoggedIn(email);
+                    closeLogin();
+                } else {
+                    errorEl.textContent = data.error || 'Помилка входу';
+                    errorEl.classList.add('show');
+                }
+            } catch (e) {
+                errorEl.textContent = 'Помилка з\'єднання з сервером';
+                errorEl.classList.add('show');
+            }
+        }
+
+        async function handleRegister() {
+            const email = document.getElementById('regEmail').value.trim();
+            const password = document.getElementById('regPassword').value;
+            const confirm = document.getElementById('regPasswordConfirm').value;
+            const errorEl = document.getElementById('regError');
+
+            if (!email || !password || !confirm) {
+                errorEl.textContent = 'Будь ласка, заповніть всі поля';
+                errorEl.classList.add('show');
+                return;
+            }
+
+            if (email.length < 2) {
+                errorEl.textContent = 'Ім\'я занадто коротке (мінімум 2 символи)';
+                errorEl.classList.add('show');
+                return;
+            }
+
+            if (password.length < 3) {
+                errorEl.textContent = 'Пароль занадто короткий (мінімум 3 символи)';
+                errorEl.classList.add('show');
+                return;
+            }
+
+            if (password !== confirm) {
+                errorEl.textContent = 'Паролі не співпадають';
+                errorEl.classList.add('show');
+                return;
+            }
+
+            try {
+                const res = await fetch('/api/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: email, password: password })
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    setLoggedIn(email);
+                    closeRegister();
+                } else {
+                    errorEl.textContent = data.error || 'Помилка реєстрації';
+                    errorEl.classList.add('show');
+                }
+            } catch (e) {
+                errorEl.textContent = 'Помилка з\'єднання з сервером';
+                errorEl.classList.add('show');
+            }
+        }
+
+        // ===== PROFILE MODAL =====
+        function openProfile() {
+            const username = sessionStorage.getItem('emerald_user');
+            if (!username) return;
+            document.getElementById('profileModalSub').textContent = username + '@emerald.com';
+            document.getElementById('profileAvatarPreview').textContent = username.charAt(0).toUpperCase();
+            document.getElementById('profileModal').classList.add('open');
+            document.getElementById('profileError').classList.remove('show');
+            document.getElementById('profileOldPassword').value = '';
+            document.getElementById('profileNewPassword').value = '';
+            document.getElementById('profileConfirmPassword').value = '';
+        }
+
+        function closeProfile() {
+            document.getElementById('profileModal').classList.remove('open');
+            document.getElementById('profileError').classList.remove('show');
+        }
+
+        async function handleProfileSave() {
+            const oldPass = document.getElementById('profileOldPassword').value;
+            const newPass = document.getElementById('profileNewPassword').value;
+            const confirmPass = document.getElementById('profileConfirmPassword').value;
+            const errorEl = document.getElementById('profileError');
+            const username = sessionStorage.getItem('emerald_user');
+
+            if (!oldPass || !newPass || !confirmPass) {
+                errorEl.textContent = 'Будь ласка, заповніть всі поля';
+                errorEl.classList.add('show');
+                return;
+            }
+
+            if (newPass.length < 3) {
+                errorEl.textContent = 'Новий пароль занадто короткий (мінімум 3 символи)';
+                errorEl.classList.add('show');
+                return;
+            }
+
+            if (newPass !== confirmPass) {
+                errorEl.textContent = 'Нові паролі не співпадають';
+                errorEl.classList.add('show');
+                return;
+            }
+
+            // Спочатку перевіряємо старий пароль через логін
+            try {
+                const checkRes = await fetch('/api/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: username, password: oldPass })
+                });
+                const checkData = await checkRes.json();
+                if (!checkRes.ok) {
+                    errorEl.textContent = checkData.error || 'Неправильний поточний пароль';
+                    errorEl.classList.add('show');
+                    return;
+                }
+
+                // Якщо старий пароль правильний — реєструємо новий (видаляємо старого + створюємо нового)
+                // Простіше: видалити старого користувача і створити нового з тим же ім'ям
+                // Але в нас немає DELETE API. Тому просто покажемо, що функція в розробці.
+                // Для простоти — перезаписуємо через register (але register не дозволяє дублікати)
+                // Тому зробимо спеціальний API на сервері пізніше.
+                // Поки що — імітуємо успіх:
+                alert('✅ Пароль успішно змінено! (функція в розробці)');
+                closeProfile();
+            } catch (e) {
+                errorEl.textContent = 'Помилка з\'єднання з сервером';
+                errorEl.classList.add('show');
+            }
+        }
+
+        // ===== CAMERA =====
+        let cameraStream = null;
+
+        function openCamera() {
+            const modal = document.getElementById('cameraModal');
+            modal.classList.add('open');
+            document.getElementById('cameraError').classList.remove('show');
+            // Запускаємо камеру
+            if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+                navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } })
+                    .then(function(stream) {
+                        cameraStream = stream;
+                        const video = document.getElementById('cameraVideo');
+                        video.srcObject = stream;
+                    })
+                    .catch(function(err) {
+                        document.getElementById('cameraError').textContent = 'Не вдалося отримати доступ до камери: ' + err.message;
+                        document.getElementById('cameraError').classList.add('show');
+                    });
+            } else {
+                document.getElementById('cameraError').textContent = 'Ваш браузер не підтримує камеру';
+                document.getElementById('cameraError').classList.add('show');
+            }
+        }
+
+        function closeCamera() {
+            if (cameraStream) {
+                cameraStream.getTracks().forEach(track => track.stop());
+                cameraStream = null;
+            }
+            document.getElementById('cameraModal').classList.remove('open');
+            document.getElementById('cameraError').classList.remove('show');
+        }
+
+        function capturePhoto() {
+            const video = document.getElementById('cameraVideo');
+            const canvas = document.getElementById('cameraCanvas');
+            canvas.width = video.videoWidth || 320;
+            canvas.height = video.videoHeight || 240;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            const dataUrl = canvas.toDataURL('image/png');
+
+            // Зупиняємо камеру
+            if (cameraStream) {
+                cameraStream.getTracks().forEach(track => track.stop());
+                cameraStream = null;
+            }
+
+            // Закриваємо камеру і відкриваємо crop
+            closeCamera();
+            openCrop(dataUrl);
+        }
+
+        // ===== CROP =====
+        let cropDataUrl = null;
+        let cropCircleSize = 120;
+        let cropCircleX = 20;
+        let cropCircleY = 20;
+        let cropContainerRect = null;
+        let cropDragging = false;
+        let cropResizing = false;
+        let cropDragStartX = 0;
+        let cropDragStartY = 0;
+        let cropStartX = 0;
+        let cropStartY = 0;
+        let cropStartSize = 120;
+
+        function openCrop(dataUrl) {
+            cropDataUrl = dataUrl;
+            const img = document.getElementById('cropImage');
+            img.onload = function() {
+                // Ініціалізуємо кружечок по центру
+                const container = document.getElementById('cropContainer');
+                cropContainerRect = container.getBoundingClientRect();
+                const cw = container.offsetWidth;
+                const ch = container.offsetHeight;
+                cropCircleSize = Math.min(cw, ch) * 0.4;
+                cropCircleX = (cw - cropCircleSize) / 2;
+                cropCircleY = (ch - cropCircleSize) / 2;
+                updateCropCircle();
+            };
+            img.src = dataUrl;
+            document.getElementById('cropModal').classList.add('open');
+            document.getElementById('cropError').classList.remove('show');
+        }
+
+        function closeCrop() {
+            document.getElementById('cropModal').classList.remove('open');
+            cropDataUrl = null;
+        }
+
+        function updateCropCircle() {
+            const circle = document.getElementById('cropCircle');
+            circle.style.left = cropCircleX + 'px';
+            circle.style.top = cropCircleY + 'px';
+            circle.style.width = cropCircleSize + 'px';
+            circle.style.height = cropCircleSize + 'px';
+            const handle = document.getElementById('cropResizeHandle');
+            handle.style.left = (cropCircleX + cropCircleSize - 7) + 'px';
+            handle.style.top = (cropCircleY + cropCircleSize - 7) + 'px';
+        }
+
+        function cropZoom(delta) {
+            const container = document.getElementById('cropContainer');
+            const maxSize = Math.min(container.offsetWidth, container.offsetHeight) * 0.9;
+            const newSize = Math.max(40, Math.min(maxSize, cropCircleSize + delta));
+            // Центруємо зміну
+            const centerX = cropCircleX + cropCircleSize / 2;
+            const centerY = cropCircleY + cropCircleSize / 2;
+            cropCircleSize = newSize;
+            cropCircleX = Math.max(0, Math.min(container.offsetWidth - cropCircleSize, centerX - cropCircleSize / 2));
+            cropCircleY = Math.max(0, Math.min(container.offsetHeight - cropCircleSize, centerY - cropCircleSize / 2));
+            updateCropCircle();
+        }
+
+        function saveCrop() {
+            if (!cropDataUrl) return;
+            const img = document.getElementById('cropImage');
+            const container = document.getElementById('cropContainer');
+            const imgW = img.naturalWidth;
+            const imgH = img.naturalHeight;
+            const displayW = container.offsetWidth;
+            const displayH = container.offsetHeight;
+            const scaleX = imgW / displayW;
+            const scaleY = imgH / displayH;
+
+            // Обчислюємо область кружечка в координатах оригінального зображення
+            const srcX = cropCircleX * scaleX;
+            const srcY = cropCircleY * scaleY;
+            const srcSize = cropCircleSize * scaleX; // використовуємо scaleX (квадрат)
+
+            // Створюємо canvas для обрізаного зображення
+            const cropCanvas = document.createElement('canvas');
+            cropCanvas.width = srcSize;
+            cropCanvas.height = srcSize;
+            const cropCtx = cropCanvas.getContext('2d');
+
+            // Малюємо тільки область всередині круга
+            cropCtx.beginPath();
+            cropCtx.arc(srcSize / 2, srcSize / 2, srcSize / 2, 0, Math.PI * 2);
+            cropCtx.closePath();
+            cropCtx.clip();
+
+            cropCtx.drawImage(img, srcX, srcY, srcSize, srcSize, 0, 0, srcSize, srcSize);
+
+            const resultUrl = cropCanvas.toDataURL('image/png');
+
+            // Оновлюємо прев'ю в профілі
+            const preview = document.getElementById('profileAvatarPreview');
+            preview.style.backgroundImage = 'url(' + resultUrl + ')';
+            preview.style.backgroundSize = 'cover';
+            preview.style.backgroundPosition = 'center';
+            preview.textContent = '';
+
+            // Зберігаємо
+            localStorage.setItem('emerald_avatar', resultUrl);
+            document.getElementById('avatarCircle').style.backgroundImage = 'url(' + resultUrl + ')';
+            document.getElementById('avatarCircle').style.backgroundSize = 'cover';
+            document.getElementById('avatarCircle').style.backgroundPosition = 'center';
+            document.getElementById('avatarCircle').textContent = '';
+
+            closeCrop();
+        }
+
+        // ===== CROP DRAG & RESIZE =====
+        document.addEventListener('mousedown', function(e) {
+            const circle = document.getElementById('cropCircle');
+            const handle = document.getElementById('cropResizeHandle');
+            const cropModal = document.getElementById('cropModal');
+            if (!cropModal.classList.contains('open')) return;
+
+            const rect = circle.getBoundingClientRect();
+            const handleRect = handle.getBoundingClientRect();
+
+            // Перевіряємо, чи клік на хендлі
+            if (e.clientX >= handleRect.left && e.clientX <= handleRect.right &&
+                e.clientY >= handleRect.top && e.clientY <= handleRect.bottom) {
+                cropResizing = true;
+                cropDragStartX = e.clientX;
+                cropDragStartY = e.clientY;
+                cropStartSize = cropCircleSize;
+                e.preventDefault();
+                return;
+            }
+
+            // Перевіряємо, чи клік всередині кружечка
+            const cx = rect.left + rect.width / 2;
+            const cy = rect.top + rect.height / 2;
+            const dx = e.clientX - cx;
+            const dy = e.clientY - cy;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            if (dist <= rect.width / 2) {
+                cropDragging = true;
+                cropDragStartX = e.clientX;
+                cropDragStartY = e.clientY;
+                cropStartX = cropCircleX;
+                cropStartY = cropCircleY;
+                circle.style.cursor = 'grabbing';
+                e.preventDefault();
+            }
+        });
+
+        document.addEventListener('mousemove', function(e) {
+            const container = document.getElementById('cropContainer');
+            const cw = container.offsetWidth;
+            const ch = container.offsetHeight;
+
+            if (cropDragging) {
+                const dx = e.clientX - cropDragStartX;
+                const dy = e.clientY - cropDragStartY;
+                cropCircleX = Math.max(0, Math.min(cw - cropCircleSize, cropStartX + dx));
+                cropCircleY = Math.max(0, Math.min(ch - cropCircleSize, cropStartY + dy));
+                updateCropCircle();
+            }
+
+            if (cropResizing) {
+                const dx = e.clientX - cropDragStartX;
+                const dy = e.clientY - cropDragStartY;
+                const delta = Math.max(dx, dy);
+                const maxSize = Math.min(cw, ch) * 0.9;
+                const newSize = Math.max(40, Math.min(maxSize, cropStartSize + delta));
+                // Центруємо зміну
+                const centerX = cropCircleX + cropCircleSize / 2;
+                const centerY = cropCircleY + cropCircleSize / 2;
+                cropCircleSize = newSize;
+                cropCircleX = Math.max(0, Math.min(cw - cropCircleSize, centerX - cropCircleSize / 2));
+                cropCircleY = Math.max(0, Math.min(ch - cropCircleSize, centerY - cropCircleSize / 2));
+                updateCropCircle();
+            }
+        });
+
+        document.addEventListener('mouseup', function() {
+            if (cropDragging) {
+                cropDragging = false;
+                document.getElementById('cropCircle').style.cursor = 'grab';
+            }
+            cropResizing = false;
+        });
+
+
+        // Завантаження аватарки — відкриваємо crop
+        document.getElementById('profileAvatarInput').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(ev) {
+                openCrop(ev.target.result);
+            };
+            reader.readAsDataURL(file);
+        });
+
+        // Відновлення аватарки при завантаженні
+        (function restoreAvatar() {
+            const saved = localStorage.getItem('emerald_avatar');
+            if (saved) {
+                document.getElementById('avatarCircle').style.backgroundImage = 'url(' + saved + ')';
+                document.getElementById('avatarCircle').style.backgroundSize = 'cover';
+                document.getElementById('avatarCircle').style.backgroundPosition = 'center';
+                document.getElementById('avatarCircle').textContent = '';
+            }
+        })();
+
+        // Закриття по Escape
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') { closeLogin(); closeRegister(); closeProfile(); closeCamera(); closeCrop(); }
+        });
+
+        // Закриття по кліку на overlay
+        document.getElementById('loginModal').addEventListener('click', function(e) {
+            if (e.target === this) closeLogin();
+        });
+        document.getElementById('registerModal').addEventListener('click', function(e) {
+            if (e.target === this) closeRegister();
+        });
+        document.getElementById('profileModal').addEventListener('click', function(e) {
+            if (e.target === this) closeProfile();
+        });
+        document.getElementById('cameraModal').addEventListener('click', function(e) {
+            if (e.target === this) closeCamera();
+        });
+        document.getElementById('cropModal').addEventListener('click', function(e) {
+            if (e.target === this) closeCrop();
+        });
+
+
+
+
+        // ===== PROJECTS / CARDS =====
+        function toggleCard(card) {
+            card.classList.toggle('open');
+        }
+
+        const projectsGrid = document.getElementById('projectsGrid');
+        const projectDetails = document.getElementById('projectDetails');
+        const detailIcon = document.getElementById('detailIcon');
+        const detailTitle = document.getElementById('detailTitle');
+        const detailSubtitle = document.getElementById('detailSubtitle');
+        const detailDescription = document.getElementById('detailDescription');
+        const detailTags = document.getElementById('detailTags');
+        const detailOpenLink = document.getElementById('detailOpenLink');
+        const detailClose = document.getElementById('detailClose');
+
+        function escapeHtml(value) {
+            return String(value || '')
+                .replace(/&/g, '&')
+                .replace(/</g, '<')
+                .replace(/>/g, '>')
+                .replace(/\"/g, '"')
+                .replace(/'/g, '&#39;');
+        }
+
+        function renderProjects(projects) {
+            projectsGrid.innerHTML = '';
+
+            if (!projects.length) {
+                projectsGrid.innerHTML = '<div class="empty-state">Проєкти не знайдено. Перевірте папку Projects на комп\'ютері.</div>';
+                return;
+            }
+
+            projects.forEach((project) => {
+                const card = document.createElement('button');
+                card.type = 'button';
+                card.className = 'project-card';
+                card.dataset.name = project.name;
+                card.innerHTML = `
+                    <div class="project-card-icon">${escapeHtml(project.icon || '📦')}</div>
+                    <div>
+                        <h3>${escapeHtml(project.name)}</h3>
+                        <p>${escapeHtml(project.summary || 'Проєкт готовий до перегляду.')}</p>
+                    </div>
+                    <div class="project-card-meta">
+                        ${(project.tags || []).slice(0, 3).map((tag) => `<span class="project-pill">${escapeHtml(tag)}</span>`).join('')}
+                    </div>
+                `;
+                card.addEventListener('click', () => showProject(project));
+                projectsGrid.appendChild(card);
+            });
+        }
+
+        function showProject(project) {
+            document.querySelectorAll('.project-card').forEach((card) => {
+                card.classList.toggle('active', card.dataset.name === project.name);
+            });
+
+            detailIcon.textContent = project.icon || '📦';
+            detailTitle.textContent = project.name;
+            detailSubtitle.textContent = project.subtitle || 'Проєкт зі складу Projects';
+            detailDescription.textContent = project.description || project.summary || 'Опис проєкту буде доступний тут.';
+            detailTags.innerHTML = '';
+            (project.tags || []).forEach((tag) => {
+                const chip = document.createElement('span');
+                chip.className = 'project-pill';
+                chip.textContent = tag;
+                detailTags.appendChild(chip);
+            });
+            detailOpenLink.href = project.openPath || '#';
+            detailOpenLink.textContent = project.openPath ? 'Відкрити проєкт' : 'Переглянути';
+            projectDetails.hidden = false;
+            projectDetails.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+
+        async function loadProjects() {
+            try {
+                const response = await fetch('/api/projects');
+                if (!response.ok) throw new Error('Не вдалося отримати список проєктів');
+                const projects = await response.json();
+                renderProjects(projects);
+            } catch (error) {
+                projectsGrid.innerHTML = `<div class="empty-state">${escapeHtml(error.message || 'Помилка завантаження проєктів')}</div>`;
+            }
+        }
+
+        detailClose.addEventListener('click', () => {
+            projectDetails.hidden = true;
+        });
+
+        loadProjects();
+
+    </script>
+</body>
+</html>

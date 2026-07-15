@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>House Flopper - Реставрація будинків</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="game">
+        <!-- Стартовий екран -->
+        <div id="start-screen">
+            <div class="start-content">
+                <h1>🏚️ House Flopper</h1>
+                <p class="start-desc">Вас наймають люди, щоб реставрувати старі занедбані будинки. Клієнти пишуть вам на телефон — ви берете замовлення, заходите в будинок, викидаєте сміття та фарбуєте стіни!</p>
+                <div class="start-tools-preview">
+                    <span>🔨</span><span>🪛</span><span>🎨</span>
+                    <p>+3 початкові інструменти</p>
+                </div>
+                <button id="start-btn" class="btn btn-start">🚀 Почати гру!</button>
+            </div>
+        </div>
+
+        <!-- Основний ігровий інтерфейс -->
+        <div id="game-ui" class="hidden">
+            <header>
+                <div class="header-top">
+                    <h1>🏚️ House Flopper</h1>
+                    <div class="stats">
+                        <div class="stat">
+                            <span class="stat-icon">💰</span>
+                            <span id="money">5000</span>
+                        </div>
+                        <div class="stat">
+                            <span class="stat-icon">🔧</span>
+                            <span id="tools-count">0</span>
+                        </div>
+                        <div class="stat">
+                            <span class="stat-icon">🏠</span>
+                            <span id="houses-active">0</span>
+                        </div>
+                        <div class="stat">
+                            <span class="stat-icon">📊</span>
+                            <span id="level">1</span>
+                        </div>
+                    </div>
+                </div>
+                <nav>
+                    <button class="nav-btn active" data-tab="messages">💬 Повідомлення <span id="msg-badge" class="badge hidden">0</span></button>
+                    <button class="nav-btn" data-tab="workshop">🔧 Майстерня</button>
+                    <button class="nav-btn" data-tab="projects">🏠 Проєкти</button>
+                </nav>
+            </header>
+
+            <!-- Messages Tab -->
+            <section id="messages" class="tab active">
+                <h2>💬 Повідомлення від клієнтів</h2>
+                <div id="messages-list"></div>
+            </section>
+
+            <!-- Workshop Tab -->
+            <section id="workshop" class="tab">
+                <h2>🔧 Магазин інструментів</h2>
+                <div id="shop-list" class="card-grid"></div>
+            </section>
+
+            <!-- Projects Tab -->
+            <section id="projects" class="tab">
+                <h2>🏠 Активні проєкти</h2>
+                <div id="projects-list" class="card-grid"></div>
+            </section>
+
+            <!-- Локація будинку -->
+            <section id="house-location" class="tab">
+                <div id="location-header">
+                    <button id="back-btn" class="btn btn-secondary" style="width:auto;">⬅ Назад</button>
+                    <div id="location-info">
+                        <span id="location-client"></span>
+                        <span id="location-progress">Готовність: <span id="loc-progress-val">0</span>%</span>
+                    </div>
+                    <div id="room-nav">
+                        <button id="room-prev" class="btn btn-secondary" style="width:auto;">◀</button>
+                        <span id="room-name-display">Кімната</span>
+                        <button id="room-next" class="btn btn-secondary" style="width:auto;">▶</button>
+                    </div>
+                </div>
+                
+                <!-- Візуальна кімната -->
+                <div id="room-scene">
+                    <!-- Сонце (в усіх кімнатах) -->
+                    <div id="sun">☀️</div>
+                    
+                    <!-- Вікно (в усіх кімнатах) -->
+                    <div id="window">
+                        <div id="window-frame"></div>
+                        <div id="window-sky"></div>
+                    </div>
+                    
+                    <!-- Стіни -->
+                    <div id="wall-left" class="wall"></div>
+                    <div id="wall-right" class="wall"></div>
+                    <div id="wall-back" class="wall"></div>
+                    
+                    <!-- Підлога -->
+                    <div id="floor"></div>
+
+                    <!-- ===== ЕЛЕМЕНТИ КУХНІ ===== -->
+                    <div class="room-item kitchen-item" id="kitchen-stove">
+                        <div class="stove-top"></div>
+                        <div class="stove-oven"></div>
+                        <div class="stove-label">🍳</div>
+                    </div>
+                    <div class="room-item kitchen-item" id="kitchen-fridge">
+                        <div class="fridge-body"></div>
+                        <div class="fridge-handle"></div>
+                        <div class="fridge-label">🧊</div>
+                    </div>
+                    <div class="room-item kitchen-item" id="kitchen-microwave">
+                        <div class="mw-body"></div>
+                        <div class="mw-screen"></div>
+                        <div class="mw-label">📦</div>
+                    </div>
+
+                    <!-- ===== ЕЛЕМЕНТИ ВІТАЛЬНІ ===== -->
+                    <div class="room-item living-item" id="living-sofa">
+                        <div class="sofa-seat"></div>
+                        <div class="sofa-back"></div>
+                        <div class="sofa-arm left"></div>
+                        <div class="sofa-arm right"></div>
+                    </div>
+                    <div class="room-item living-item" id="living-tv">
+                        <div class="tv-screen"></div>
+                        <div class="tv-stand"></div>
+                    </div>
+                    <div class="room-item living-item" id="living-table">
+                        <div class="table-top"></div>
+                        <div class="table-leg left"></div>
+                        <div class="table-leg right"></div>
+                    </div>
+
+                    <!-- ===== ЕЛЕМЕНТИ СПАЛЬНІ ===== -->
+                    <div class="room-item bedroom-item" id="bedroom-bed">
+                        <div class="bed-mattress"></div>
+                        <div class="bed-pillow"></div>
+                        <div class="bed-blanket"></div>
+                    </div>
+                    <div class="room-item bedroom-item" id="bedroom-nightstand">
+                        <div class="ns-body"></div>
+                        <div class="ns-lamp">💡</div>
+                    </div>
+
+                    <!-- ===== ЕЛЕМЕНТИ ВАННОЇ ===== -->
+                    <div class="room-item bathroom-item" id="bathroom-shower">
+                        <div class="shower-head">🚿</div>
+                        <div class="shower-pipe"></div>
+                        <div class="shower-base"></div>
+                    </div>
+                    <div class="room-item bathroom-item" id="bathroom-tub">
+                        <div class="tub-body"></div>
+                        <div class="tub-faucet"></div>
+                    </div>
+                    <div class="room-item bathroom-item" id="bathroom-sink">
+                        <div class="sink-bowl"></div>
+                        <div class="sink-mirror">🪞</div>
+                    </div>
+
+                    <!-- ===== ЕЛЕМЕНТИ КОРИДОРУ ===== -->
+                    <div class="room-item hall-item" id="hall-rack">
+                        <div class="rack-hook left">👔</div>
+                        <div class="rack-hook right">🧥</div>
+                        <div class="rack-pole"></div>
+                    </div>
+                    <div class="room-item hall-item" id="hall-mirror">
+                        <div class="mirror-glass"></div>
+                        <div class="mirror-frame"></div>
+                    </div>
+                    <div class="room-item hall-item" id="hall-mat">
+                        <div class="mat-body"></div>
+                    </div>
+
+                    <!-- ===== ЕЛЕМЕНТИ ГОРИЩА ===== -->
+                    <div class="room-item attic-item" id="attic-boxes">
+                        <div class="box box1">📦</div>
+                        <div class="box box2">📦</div>
+                        <div class="box box3">📦</div>
+                    </div>
+                    <div class="room-item attic-item" id="attic-lamp">
+                        <div class="old-lamp">💡</div>
+                        <div class="old-lamp-cord"></div>
+                    </div>
+                    
+                    <!-- Сміття (клікабельне) -->
+                    <div id="trash" class="interactive">
+                        <div class="trash-item">📦</div>
+                        <div class="trash-item">🗑️</div>
+                        <div class="trash-item">📰</div>
+                    </div>
+                    
+                    <!-- Обірвані стіни (клікабельні) -->
+                    <div id="wall-damage" class="interactive">
+                        <div class="damage-spot"></div>
+                        <div class="damage-spot"></div>
+                        <div class="damage-spot"></div>
+                    </div>
+                    
+                    <!-- Проблеми від інструментів (клікабельні) -->
+                    <div id="tool-problems" class="interactive">
+                        <!-- Цвяхи, що стирчать (hammer) -->
+                        <div class="tool-problem-viz" data-problem-id="nails" data-tool-id="hammer" id="prob-nails">
+                            <div class="nail nail-1">⬇️</div>
+                            <div class="nail nail-2">⬇️</div>
+                            <div class="nail nail-3">⬇️</div>
+                        </div>
+                        <!-- Розхитані ручки (screwdriver) -->
+                        <div class="tool-problem-viz" data-problem-id="screws" data-tool-id="screwdriver" id="prob-screws">
+                            <div class="loose-handle">🚪</div>
+                            <div class="handle-wobble">〰️</div>
+                        </div>
+                        <!-- Старі дірки в стінах (drill) -->
+                        <div class="tool-problem-viz" data-problem-id="holes" data-tool-id="drill" id="prob-holes">
+                            <div class="hole hole-1">⚫</div>
+                            <div class="hole hole-2">⚫</div>
+                        </div>
+                        <!-- Старі дошки (saw) -->
+                        <div class="tool-problem-viz" data-problem-id="boards" data-tool-id="saw" id="prob-boards">
+                            <div class="old-board">🪵</div>
+                        </div>
+                        <!-- Бруд під стелею (ladder) -->
+                        <div class="tool-problem-viz" data-problem-id="ceiling" data-tool-id="ladder" id="prob-ceiling">
+                            <div class="ceiling-dirt">🕸️</div>
+                        </div>
+                        <!-- Протічка труб (plumbing) -->
+                        <div class="tool-problem-viz" data-problem-id="leak" data-tool-id="plumbing" id="prob-leak">
+                            <div class="water-drip">💧</div>
+                            <div class="water-drip">💧</div>
+                        </div>
+                        <!-- Оголені дроти (electrical) -->
+                        <div class="tool-problem-viz" data-problem-id="wires" data-tool-id="electrical" id="prob-wires">
+                            <div class="wire">⚡</div>
+                        </div>
+                        <!-- Відбита плитка (tiles) -->
+                        <div class="tool-problem-viz" data-problem-id="tiles" data-tool-id="tiles" id="prob-tiles">
+                            <div class="broken-tile">🔲</div>
+                        </div>
+                        <!-- Розбиті вікна (windows) -->
+                        <div class="tool-problem-viz" data-problem-id="windows" data-tool-id="windows" id="prob-windows">
+                            <div class="broken-window">🪟</div>
+                        </div>
+                        <!-- Діри в даху (roof) -->
+                        <div class="tool-problem-viz" data-problem-id="roof" data-tool-id="roof" id="prob-roof">
+                            <div class="roof-hole">🏚️</div>
+                        </div>
+                        <!-- Тріщини на стінах (facade) -->
+                        <div class="tool-problem-viz" data-problem-id="facade" data-tool-id="facade" id="prob-facade">
+                            <div class="crack crack-1">〰️</div>
+                            <div class="crack crack-2">〰️</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Canvas для фарбування -->
+                    <canvas id="paint-canvas"></canvas>
+                    
+                    <!-- Статус кімнати -->
+                    <div id="room-status-badge">⚠️ Потребує ремонту</div>
+
+                </div>
+
+                <!-- Інвентар (внизу) -->
+                <div id="inventory-bar">
+                    <div class="inv-title">Інвентар</div>
+                    <div class="inv-slots">
+                        <div class="inv-slot" data-tool="trash" id="slot-trash">
+                            <div class="inv-icon">🗑️</div>
+                            <div class="inv-key">1</div>
+                            <div class="inv-name">Відро</div>
+                        </div>
+                        <div class="inv-slot" data-tool="roller" id="slot-roller">
+                            <div class="inv-icon">🎨</div>
+                            <div class="inv-key">2</div>
+                            <div class="inv-name">Валик</div>
+                        </div>
+                    </div>
+                    <div id="tool-hint" class="tool-hint">Натисніть 1 або 2, щоб вибрати інструмент</div>
+                </div>
+            </section>
+
+            <!-- Notification -->
+            <div id="notification" class="hidden"></div>
+        </div>
+    </div>
+
+    <script src="game.js"></script>
+</body>
+</html>

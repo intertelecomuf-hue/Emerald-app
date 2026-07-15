@@ -1,0 +1,28 @@
+2026-07-08 17:15:56,634 INFO Завантажено токен: 8861897014...
+2026-07-08 17:15:56,640 INFO Старт бота
+2026-07-08 17:15:56,641 INFO Запускаю polling...
+2026-07-08 17:15:56,641 INFO Start polling
+2026-07-08 17:15:56,822 INFO Run polling for bot @EMERALDSupportbot id=8861897014 - 'EMERALD'
+2026-07-08 17:16:21,851 INFO Нерозпізнане повідомлення від 5687847452: ;l
+2026-07-08 17:16:22,088 INFO Відправлено fallback
+2026-07-08 17:16:22,089 INFO Update id=903441486 is handled. Duration 244 ms by bot id=8861897014
+2026-07-08 17:16:22,398 INFO Нерозпізнане повідомлення від 5687847452: ;
+2026-07-08 17:16:22,485 INFO Відправлено fallback
+2026-07-08 17:16:22,486 INFO Update id=903441487 is handled. Duration 89 ms by bot id=8861897014
+2026-07-08 17:16:23,138 INFO Нерозпізнане повідомлення від 5687847452: ;
+2026-07-08 17:16:23,213 INFO Відправлено fallback
+2026-07-08 17:16:23,268 WARNING Не вдалося поставити реакцію для 5687847452: Telegram server says - Bad Request: REACTION_INVALID
+2026-07-08 17:16:23,268 INFO Update id=903441488 is handled. Duration 130 ms by bot id=8861897014
+2026-07-08 17:16:23,582 INFO Нерозпізнане повідомлення від 5687847452: ;;
+2026-07-08 17:16:23,650 INFO Відправлено fallback
+2026-07-08 17:16:23,650 INFO Update id=903441489 is handled. Duration 71 ms by bot id=8861897014
+2026-07-08 17:16:23,781 INFO Нерозпізнане повідомлення від 5687847452: ;
+2026-07-08 17:16:23,842 INFO Відправлено fallback
+2026-07-08 17:16:23,842 INFO Update id=903441490 is handled. Duration 61 ms by bot id=8861897014
+2026-07-08 17:16:23,984 INFO Нерозпізнане повідомлення від 5687847452: ;
+2026-07-08 17:16:24,050 INFO Відправлено fallback
+2026-07-08 17:16:24,100 WARNING Не вдалося поставити реакцію для 5687847452: Telegram server says - Bad Request: REACTION_INVALID
+2026-07-08 17:16:24,100 INFO Update id=903441491 is handled. Duration 117 ms by bot id=8861897014
+2026-07-08 17:18:37,005 WARNING Received SIGTERM signal
+2026-07-08 17:18:37,007 INFO Polling stopped for bot @EMERALDSupportbot id=8861897014 - 'EMERALD'
+2026-07-08 17:18:37,008 INFO Polling stopped

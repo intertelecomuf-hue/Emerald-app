@@ -1,0 +1,26 @@
+[
+    {
+        "merged": "com.emerald.app-merged_res-51:/drawable_ic_launcher_foreground.xml.flat",
+        "source": "com.emerald.app-main-53:/drawable/ic_launcher_foreground.xml"
+    },
+    {
+        "merged": "/Users/fedir/.gradle/daemon/8.5/com.emerald.app-merged_res-51:/drawable_ic_launcher_foreground.xml.flat",
+        "source": "/Users/fedir/.gradle/daemon/8.5/com.emerald.app-main-53:/drawable/ic_launcher_foreground.xml"
+    },
+    {
+        "merged": "/Users/fedir/.gradle/daemon/8.5/com.emerald.app-merged_res-51:/mipmap-anydpi-v26_ic_launcher.xml.flat",
+        "source": "/Users/fedir/.gradle/daemon/8.5/com.emerald.app-main-53:/mipmap-anydpi-v26/ic_launcher.xml"
+    },
+    {
+        "merged": "/Users/fedir/.gradle/daemon/8.5/com.emerald.app-merged_res-51:/mipmap-anydpi-v26_ic_launcher_round.xml.flat",
+        "source": "/Users/fedir/.gradle/daemon/8.5/com.emerald.app-main-53:/mipmap-anydpi-v26/ic_launcher_round.xml"
+    },
+    {
+        "merged": "com.emerald.app-merged_res-51:/drawable_ic_launcher_background.xml.flat",
+        "source": "com.emerald.app-main-53:/drawable/ic_launcher_background.xml"
+    },
+    {
+        "merged": "/Users/fedir/.gradle/daemon/8.5/com.emerald.app-merged_res-51:/drawable_ic_launcher_background.xml.flat",
+        "source": "/Users/fedir/.gradle/daemon/8.5/com.emerald.app-main-53:/drawable/ic_launcher_background.xml"
+    }
+]

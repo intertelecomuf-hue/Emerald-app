@@ -1,0 +1,23 @@
+2026-07-08 14:24:36,618 INFO Завантажено токен: 8861897014...
+2026-07-08 14:24:36,626 INFO Старт бота
+2026-07-08 14:24:36,626 INFO Запускаю polling...
+2026-07-08 14:24:36,626 INFO Start polling
+2026-07-08 14:24:39,165 INFO Run polling for bot @EMERALDSupportbot id=8861897014 - 'EMERALD'
+2026-07-08 14:27:14,584 INFO Отримано /start від 5687847452
+2026-07-08 14:27:15,067 INFO Відправлено відповідь на /start
+2026-07-08 14:27:15,067 INFO Update id=903441439 is handled. Duration 486 ms by bot id=8861897014
+2026-07-08 14:27:34,504 INFO Отримано повідомлення від 5687847452: Голосування на офіційний сайт.
+2026-07-08 14:27:34,696 INFO Відправлено відповідь
+2026-07-08 14:27:34,697 INFO Update id=903441440 is handled. Duration 192 ms by bot id=8861897014
+2026-07-08 14:27:42,590 INFO Отримано повідомлення від 5687847452: Дай посилання на офіційний сайт.
+2026-07-08 14:27:42,796 INFO Відправлено відповідь
+2026-07-08 14:27:42,796 INFO Update id=903441441 is handled. Duration 207 ms by bot id=8861897014
+2026-07-08 14:27:53,609 INFO Отримано повідомлення від 5687847452: Направ мене на офіційний сайт.
+2026-07-08 14:27:53,681 INFO Відправлено відповідь
+2026-07-08 14:27:53,681 INFO Update id=903441442 is handled. Duration 72 ms by bot id=8861897014
+2026-07-08 14:44:04,456 ERROR Failed to fetch updates - TelegramNetworkError: HTTP Client says - ServerDisconnectedError: Server disconnected
+2026-07-08 14:44:04,460 WARNING Sleep for 1.000000 seconds and try again... (tryings = 0, bot id = 8861897014)
+2026-07-08 14:59:15,830 INFO Connection established (tryings = 1, bot id = 8861897014)
+2026-07-08 14:59:15,836 ERROR Failed to fetch updates - TelegramNetworkError: HTTP Client says - ServerDisconnectedError: Server disconnected
+2026-07-08 14:59:15,837 WARNING Sleep for 1.000000 seconds and try again... (tryings = 0, bot id = 8861897014)
+2026-07-08 14:59:27,267 INFO Connection established (tryings = 1, bot id = 8861897014)

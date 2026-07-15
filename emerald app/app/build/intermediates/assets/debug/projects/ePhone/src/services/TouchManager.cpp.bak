@@ -1,0 +1,301 @@
+/**
+ * TouchManager.cpp — XPT2046 touch handling with debounce & calibration
+ *
+ * Uses the XPT2046 PENIRQ hardware pin (GPIO36) for touch detection
+ * instead of Z-pressure measurement via SPI. The PENIRQ pin goes LOW
+ * when the XPT2046 detects a touch internally.
+ *
+ * SPI bus sharing with ST7789 display:
+ *   Both XPT2046 (CS=21) and ST7789 (CS=15) share HSPI (SPI2).
+ *   BEFORE any touch SPI transaction, we must ensure the display
+ *   CS is HIGH (inactive) so it doesn't drive MISO (GPIO12).
+ *   This mirrors TFT_eSPI's begin_touch_read_write() which does
+ *   CS_H (GPIO15 HIGH) before touch reads.
+ *
+ * SPI mode: SPI_MODE0 — matches TFT_eSPI's touch implementation
+ *   (see TFT_eSPI/Extensions/Touch.cpp). XPT2046 supports both
+ *   Mode 0 and Mode 1 per datasheet.
+ */
+
+#include "TouchManager.h"
+#include "../config.h"
+
+// Touch SPI frequency (1 MHz — well within XPT2046 spec of 2.5 MHz max)
+// Lower speed ensures reliable communication on shared HSPI bus
+#define TOUCH_SPI_FREQ 1000000
+
+// Debug: set to 1 to print touch events to Serial
+#define TOUCH_DEBUG 1
+
+// Minimum time between successive PENIRQ checks (ms)
+#define PENIRQ_POLL_MS 5
+
+// ============================================================
+// Constructor
+// ============================================================
+TouchManager::TouchManager()
+    : _spi(nullptr)
+    , _csPin(PIN_TOUCH_CS)
+    , _irqPin(PIN_TOUCH_IRQ)
+    , _lastTouchTime(0)
+    , _debounceMs(TOUCH_DEBOUNCE_MS)
+    , _xMin(TOUCH_X_MIN), _xMax(TOUCH_X_MAX)
+    , _yMin(TOUCH_Y_MIN), _yMax(TOUCH_Y_MAX)
+    , _swapXY(TOUCH_SWAP_XY)
+    , _invertX(TOUCH_INVERT_X), _invertY(TOUCH_INVERT_Y)
+    , _wasTouching(false)
+    , _tapHappened(false)
+    , _tapX(-1), _tapY(-1)
+    , _xraw(0), _yraw(0)
+{
+}
+
+// ============================================================
+// begin() — set up CS pin + IRQ pin, reference the shared SPI bus
+// ============================================================
+void TouchManager::begin(SPIClass& spiBus) {
+    _spi = &spiBus;
+
+    // CS pin for XPT2046
+    pinMode(_csPin, OUTPUT);
+    digitalWrite(_csPin, HIGH);
+
+    // PENIRQ pin — XPT2046 pulls LOW when touch is detected
+    // GPIO36 is input-only on ESP32 (no pull-up), CYD board has external pull-up
+    pinMode(_irqPin, INPUT);
+
+    // Ensure HSPI MISO (GPIO12) is configured as input for touch reads
+    // TFT_eSPI's spi.begin() sets this, but be explicit in case TFT_eSPI
+    // version or config changes
+    pinMode(12, INPUT);
+
+    // Display CS (GPIO15) — ensure we can deselect the display before touch reads
+    // TFT_eSPI uses direct register writes for CS, but digitalWrite still works
+    pinMode(15, OUTPUT);
+    digitalWrite(15, HIGH);
+
+    // --- Wake-up / initialize XPT2046 ---
+    // The XPT2046 might be in an unknown state after power-on or after
+    // the TFT display has used the shared SPI bus. Send a dummy command
+    // to initialize the XPT2046's serial interface state machine.
+    digitalWrite(15, HIGH);       // Ensure display is deselected
+    _spi->beginTransaction(SPISettings(TOUCH_SPI_FREQ, MSBFIRST, SPI_MODE0));
+    digitalWrite(_csPin, LOW);
+    delayMicroseconds(5);
+
+    // Send wake-up command (0x90 = Y+, 12-bit, diff, PD=00 "ADC on")
+    // followed by a dummy read to synchronize the serial interface
+    _spi->transfer(0x90);
+    _spi->transfer(0x00);
+    _spi->transfer(0x00);
+
+    digitalWrite(_csPin, HIGH);
+    _spi->endTransaction();
+
+    // Small delay for XPT2046 to stabilize
+    delay(1);
+}
+
+// ============================================================
+// Calibration setters
+// ============================================================
+void TouchManager::setCalibration(int xMin, int xMax, int yMin, int yMax,
+                                   bool swapXY, bool invertX, bool invertY) {
+    _xMin = xMin; _xMax = xMax;
+    _yMin = yMin; _yMax = yMax;
+    _swapXY = swapXY; _invertX = invertX; _invertY = invertY;
+}
+
+// ============================================================
+// calibrate() — map raw ADC values to screen coordinates
+// ============================================================
+void TouchManager::calibrate(int rawX, int rawY, int &outX, int &outY) {
+    int x = rawX;
+    int y = rawY;
+
+    if (_swapXY) {
+        int tmp = x; x = y; y = tmp;
+    }
+
+    x = map(x, _xMin, _xMax, 0, DISP_WIDTH);
+    y = map(y, _yMin, _yMax, 0, DISP_HEIGHT);
+
+    x = constrain(x, 0, DISP_WIDTH  - 1);
+    y = constrain(y, 0, DISP_HEIGHT - 1);
+
+    if (_invertX) x = DISP_WIDTH  - 1 - x;
+    if (_invertY) y = DISP_HEIGHT - 1 - y;
+
+    outX = x;
+    outY = y;
+}
+
+// ============================================================
+// bestTwoAvg — best-two-of-three averaging (from XPT2046 library)
+// ============================================================
+int16_t TouchManager::bestTwoAvg(int16_t a, int16_t b, int16_t c) {
+    int16_t da, db, dc;
+    int16_t reta = 0;
+    if (a > b) da = a - b; else da = b - a;
+    if (a > c) db = a - c; else db = c - a;
+    if (c > b) dc = c - b; else dc = b - c;
+
+    if (da <= db && da <= dc) reta = (a + b) >> 1;
+    else if (db <= da && db <= dc) reta = (a + c) >> 1;
+    else reta = (b + c) >> 1;
+
+    return reta;
+}
+
+// ============================================================
+// readTouchXY() — read X/Y coordinates from XPT2046 via shared SPI
+//
+// Does NOT use Z1/Z2 measurement (those commands are incorrect for
+// XPT2046 clones). Instead relies on the PENIRQ pin for touch detection.
+//
+// CRITICAL NOTES for ESP32:
+//
+// 1. SPI byte order: ESP32's transfer16() sends the MSB first in
+//    memory order, NOT bus order. So transfer16(0x0091) sends byte
+//    0x00 then 0x91 — but XPT2046 expects the command byte FIRST!
+//    Fixed by using 8-bit transfer() for command bytes.
+//    See: https://github.com/espressif/arduino-esp32/issues/2563
+//
+// 2. SPI Mode: XPT2046 supports both Mode 0 and Mode 1 per datasheet.
+//    We use SPI_MODE0 here to match TFT_eSPI's own touch implementation
+//    (see TFT_eSPI/Extensions/Touch.cpp, begin_touch_read_write()).
+//
+// 3. Display CS deselect: BEFORE any SPI transaction, we must ensure
+//    the ST7789 display CS (GPIO15) is HIGH. If the display is selected
+//    (CS LOW) while we try to read the touch controller on the same
+//    SPI bus, the display may drive MISO (GPIO12) and corrupt the data.
+//    This mirrors TFT_eSPI's CS_H in begin_touch_read_write().
+//
+// 4. Timing: The XPT2046 needs a brief settling time after CS goes
+//    LOW before the first command byte is sent.
+// ============================================================
+bool TouchManager::readTouchXY(int16_t &x, int16_t &y) {
+    if (!_spi) return false;
+
+    // CRITICAL: Deselect display before touch reads, otherwise ST7789
+    // may drive MISO (GPIO12) and corrupt XPT2046 data on the shared bus.
+    digitalWrite(15, HIGH);
+
+    // Ensure MISO is input — TFT_eSPI may have left it in output state
+    // after display write operations that use direct register access.
+    pinMode(12, INPUT);
+
+    // Use SPI Mode 0 (matches TFT_eSPI's begin_touch_read_write)
+    _spi->beginTransaction(SPISettings(TOUCH_SPI_FREQ, MSBFIRST, SPI_MODE0));
+    digitalWrite(_csPin, LOW);
+
+    // Allow XPT2046 to settle after CS assertion
+    delayMicroseconds(5);
+
+    // Dummy: discard first conversion (send Y command + read 2 bytes)
+    _spi->transfer(0x90);
+    _spi->transfer(0x00);
+    _spi->transfer(0x00);
+
+    // 3 pairs using three 8-bit transfers each (command + 2 data bytes)
+    int16_t data[6];
+    for (int i = 0; i < 3; i++) {
+        // Y: command 0x90 (Y+, 12-bit, diff, PD=00) then read 2 data bytes
+        _spi->transfer(0x90);
+        uint8_t y1 = _spi->transfer(0x00);
+        uint8_t y2 = _spi->transfer(0x00);
+        data[i*2] = ((uint16_t)y1 << 8 | y2) >> 3;
+
+        // X: command 0xD0 (X+, 12-bit, diff, PD=00) then read 2 data bytes
+        _spi->transfer(0xD0);
+        uint8_t x1 = _spi->transfer(0x00);
+        uint8_t x2 = _spi->transfer(0x00);
+        data[i*2+1] = ((uint16_t)x1 << 8 | x2) >> 3;
+
+#if TOUCH_DEBUG
+        Serial.printf("[TOUCH SPI] i=%d Ycmd=0x90 y1=0x%02X y2=0x%02X  Xcmd=0xD0 x1=0x%02X x2=0x%02X\n",
+                      i, y1, y2, x1, x2);
+#endif
+    }
+
+    x = bestTwoAvg(data[1], data[3], data[5]);
+    y = bestTwoAvg(data[0], data[2], data[4]);
+
+#if TOUCH_DEBUG
+    Serial.printf("[TOUCH SPI] final rawX=%d rawY=%d\n", x, y);
+#endif
+
+    digitalWrite(_csPin, HIGH);
+    _spi->endTransaction();
+
+    return true;
+}
+
+// ============================================================
+// getTouch() — poll PENIRQ pin, read XY if touched, return event
+// ============================================================
+TouchEvent TouchManager::getTouch() {
+    TouchEvent ev;
+    ev.pressed = false;
+    ev.x = -1;
+    ev.y = -1;
+
+    if (!_spi) return ev;
+
+    // Check PENIRQ pin: XPT2046 pulls LOW when touch is detected
+    bool penIrqActive = (digitalRead(_irqPin) == LOW);
+
+    if (penIrqActive) {
+        // Touch detected by hardware — read X/Y coordinates
+        int16_t rawX, rawY;
+        if (readTouchXY(rawX, rawY)) {
+            int calX, calY;
+            calibrate(rawX, rawY, calX, calY);
+            ev.pressed = true;
+            ev.x = calX;
+            ev.y = calY;
+
+#if TOUCH_DEBUG
+            Serial.printf("[TOUCH] DOWN at (%d,%d) raw(%d,%d)\n",
+                          calX, calY, rawX, rawY);
+#endif
+        }
+    }
+
+    // Track press → release for tap detection
+    if (ev.pressed && !_wasTouching) {
+        // First touch — record position
+        _tapX = ev.x;
+        _tapY = ev.y;
+        _wasTouching = true;
+    }
+
+    if (!ev.pressed && _wasTouching) {
+        // Release — register a tap after debounce
+        unsigned long now = millis();
+        if (now - _lastTouchTime > _debounceMs) {
+            _lastTouchTime = now;
+            _tapHappened = true;
+
+#if TOUCH_DEBUG
+            Serial.printf("[TOUCH] TAP at (%d,%d)\n", _tapX, _tapY);
+#endif
+        }
+        _wasTouching = false;
+    }
+
+    return ev;
+}
+
+// ============================================================
+// getTap() — return single tap event (press + release)
+// ============================================================
+bool TouchManager::getTap(int &tapX, int &tapY) {
+    if (_tapHappened) {
+        tapX = _tapX;
+        tapY = _tapY;
+        _tapHappened = false;
+        return true;
+    }
+    return false;
+}

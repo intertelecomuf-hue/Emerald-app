@@ -1,0 +1,17 @@
+2026-07-08 15:03:55,941 INFO Завантажено токен: 8861897014...
+2026-07-08 15:03:55,946 INFO Старт бота
+2026-07-08 15:03:55,947 INFO Запускаю polling...
+2026-07-08 15:03:55,947 INFO Start polling
+2026-07-08 15:03:56,128 INFO Run polling for bot @EMERALDSupportbot id=8861897014 - 'EMERALD'
+2026-07-08 15:06:09,668 INFO Нерозпізнане повідомлення від 5687847452: uevg. v
+2026-07-08 15:06:09,892 INFO Відправлено fallback
+2026-07-08 15:06:09,892 INFO Update id=903441443 is handled. Duration 228 ms by bot id=8861897014
+2026-07-08 15:06:19,969 INFO Привітання від 5687847452
+2026-07-08 15:06:20,037 INFO Відправлено привітання
+2026-07-08 15:06:20,037 INFO Update id=903441444 is handled. Duration 68 ms by bot id=8861897014
+2026-07-08 15:06:31,527 INFO Запит сайту від 5687847452
+2026-07-08 15:06:31,610 INFO Відправлено посилання на сайт
+2026-07-08 15:06:31,610 INFO Update id=903441445 is handled. Duration 83 ms by bot id=8861897014
+2026-07-08 15:11:47,236 WARNING Received SIGTERM signal
+2026-07-08 15:11:47,240 INFO Polling stopped for bot @EMERALDSupportbot id=8861897014 - 'EMERALD'
+2026-07-08 15:11:47,240 INFO Polling stopped

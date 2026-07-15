@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Emerald</string>
+    <string name="login_title">Emerald Account</string>
+    <string name="email_label">Email</string>
+    <string name="password_label">Пароль</string>
+    <string name="login_button">Увійти</string>
+    <string name="register_button">Зареєструватися</string>
+    <string name="logout_button">Вийти</string>
+    <string name="no_account">Немає акаунту? Зареєструватися</string>
+    <string name="have_account">Вже є акаунт? Увійти</string>
+    <string name="login_error">Невірний email або пароль</string>
+    <string name="register_error">Помилка реєстрації</string>
+    <string name="welcome_message">Ласкаво просимо до Emerald</string>
+</resources>

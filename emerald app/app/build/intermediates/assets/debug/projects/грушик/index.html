@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Грушик — Ремонт квартири</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; user-select: none; }
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: #1a1a2e;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+        .game-container {
+            background: #16213e;
+            border-radius: 24px;
+            padding: 24px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+        }
+        .game-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+            color: #e0e0e0;
+        }
+        .game-title {
+            font-size: 20px;
+            font-weight: 700;
+            color: #f0c040;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+        .stats {
+            display: flex;
+            gap: 20px;
+            font-size: 14px;
+        }
+        .stat { display: flex; align-items: center; gap: 6px; }
+        .stat-icon { font-size: 18px; }
+        .stat-value { font-weight: 600; color: #fff; min-width: 30px; }
+
+        canvas {
+            display: block;
+            border-radius: 12px;
+            background: #2a2a4a;
+            box-shadow: inset 0 0 30px rgba(0,0,0,0.3);
+            cursor: crosshair;
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-top: 16px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .btn:hover { transform: translateY(-2px); filter: brightness(1.1); }
+        .btn:active { transform: translateY(0); }
+        .btn-primary { background: #f0c040; color: #1a1a2e; }
+        .btn-secondary { background: #3a3a5c; color: #e0e0e0; }
+        .btn-success { background: #2ecc71; color: #fff; }
+
+        .material-selector {
+            display: flex;
+            gap: 8px;
+            margin-left: auto;
+        }
+        .material-btn {
+            padding: 8px 14px;
+            border: 2px solid transparent;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: #3a3a5c;
+            color: #e0e0e0;
+        }
+        .material-btn:hover { filter: brightness(1.1); }
+        .material-btn.active { border-color: #f0c040; background: #4a4a6c; }
+        .material-btn.gas-block { background: #5a7a9a; color: #fff; }
+        .material-btn.gas-block.active { border-color: #f0c040; background: #6a8aaa; }
+        .material-btn.cement { background: #3a3028; color: #fff; }
+        .material-btn.cement.active { border-color: #f0c040; background: #4a3f35; }
+        .material-btn.foam { background: #c8b890; color: #fff; }
+        .material-btn.foam.active { border-color: #f0c040; background: #d8c8a0; }
+
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: rgba(0,0,0,0.85);
+            color: #fff;
+            padding: 14px 28px;
+            border-radius: 12px;
+            font-size: 15px;
+            font-weight: 500;
+            opacity: 0;
+            transition: all 0.4s;
+            pointer-events: none;
+            z-index: 100;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: #2a2a4a;
+            border-radius: 3px;
+            margin-top: 12px;
+            overflow: hidden;
+        }
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #f0c040, #e74c3c);
+            border-radius: 3px;
+            transition: width 0.3s;
+            width: 0%;
+        }
+        .progress-label {
+            color: #888;
+            font-size: 12px;
+            margin-top: 4px;
+            text-align: right;
+        }
+        .controls-hint {
+            color: #666;
+            font-size: 12px;
+            margin-top: 8px;
+            text-align: center;
+        }
+        @media (max-width: 700px) {
+            .game-container { padding: 12px; border-radius: 16px; }
+            .controls { flex-direction: column; align-items: stretch; }
+            .material-selector { margin-left: 0; justify-content: center; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="game-container">
+    <div class="game-header">
+        <div class="game-title">🧱 Грушик — Ремонт</div>
+        <div class="stats">
+            <div class="stat"><span class="stat-icon">🧱</span><span class="stat-value" id="gasBlocks">0</span></div>
+            <div class="stat"><span class="stat-icon">🧊</span><span class="stat-value" id="cement">0</span></div>
+            <div class="stat"><span class="stat-icon">🫧</span><span class="stat-value" id="foam">0</span></div>
+            <div class="stat"><span class="stat-icon">👑</span><span class="stat-value" id="money">500</span></div>
+        </div>
+    </div>
+
+    <canvas id="gameCanvas" width="800" height="500"></canvas>
+
+    <div class="controls">
+        <button class="btn btn-primary" id="buyGasBlocks">🧱 Газоблоки (50👑)</button>
+        <button class="btn btn-secondary" id="buyCement">🧊 Цемент (30👑)</button>
+        <button class="btn btn-secondary" id="buyFoam">🫧 Клей-піна (40👑)</button>
+        <button class="btn btn-success" id="earnMoney">💰 Заробити гроші (+100👑)</button>
+        <div class="material-selector">
+            <button class="material-btn gas-block active" data-material="gasblock">🧱 Газоблок</button>
+            <button class="material-btn cement" data-material="cement">🧊 Цемент</button>
+            <button class="material-btn foam" data-material="foam">🫧 Піна</button>
+        </div>
+    </div>
+
+    <div class="progress-bar">
+        <div class="progress-fill" id="progressFill"></div>
+    </div>
+    <div class="progress-label" id="progressLabel">Прогрес ремонту: 0%</div>
+    <div class="controls-hint">🖱️ Клікай по сітці, щоб будувати стіну. Газоблоки ставляться один на одного!</div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // === Ігрові ресурси ===
+    let resources = { gasBlocks: 10, cement: 0, foam: 5, money: 500 };
+
+
+    // === Карта (вид збоку — профіль кімнати) ===
+    const TILE = 32;
+    const COLS = 22;  // ширина кімнати
+    const ROWS = 12;  // висота кімнати
+    const OFFSET_X = 50;
+    const OFFSET_Y = 50;
+
+    // Типи клітинок
+    const T = {
+        EMPTY: 0,          // пусто (повітря)
+        CONCRETE: 1,       // бетонна стіна/стеля
+        FLOOR: 9,          // зелена підлога
+        GASBLOCK: 2,       // газоблок без піни
+        GASBLOCK_FOAMED: 7,// газоблок залитий піною
+        GASBLOCK_BUILT: 8, // газоблок вбудований (сірий)
+        CEMENT: 3,
+        FOAM: 4,
+        WINDOW: 5,
+        DOOR: 6
+    };
+
+
+    // Створюємо карту (вид збоку)
+    let map = [];
+    for (let y = 0; y < ROWS; y++) {
+        map[y] = [];
+        for (let x = 0; x < COLS; x++) {
+            if (y === ROWS - 1) {
+                // Підлога — зелена
+                map[y][x] = T.FLOOR;
+            } else if (y === 0 || x === 0 || x === COLS - 1) {
+                // Стеля та стіни — бетон
+                map[y][x] = T.CONCRETE;
+            } else {
+                map[y][x] = T.EMPTY;
+            }
+        }
+    }
+
+
+    // Двері (вхід) — зліва в стіні
+    map[ROWS - 3][0] = T.DOOR;
+    map[ROWS - 4][0] = T.DOOR;
+
+    // Вікна — на стінах
+    map[3][COLS - 1] = T.WINDOW;
+    map[4][COLS - 1] = T.WINDOW;
+    map[3][0] = T.WINDOW;
+    map[4][0] = T.WINDOW;
+
+    let selectedMaterial = 'gasblock';
+    let wallProgress = 0;
+
+    // === Toast ===
+    let toastTimeout = null;
+    function showToast(text, duration = 2000) {
+        const el = document.getElementById('toast');
+        el.textContent = text;
+        el.classList.add('show');
+        clearTimeout(toastTimeout);
+        toastTimeout = setTimeout(() => el.classList.remove('show'), duration);
+    }
+
+    // === Оновлення UI ===
+    function updateUI() {
+        document.getElementById('gasBlocks').textContent = resources.gasBlocks;
+        document.getElementById('cement').textContent = resources.cement;
+        document.getElementById('foam').textContent = resources.foam;
+        document.getElementById('money').textContent = resources.money;
+
+        const totalTiles = (COLS - 2) * (ROWS - 2);
+        let placed = 0;
+        for (let y = 1; y < ROWS - 1; y++) {
+            for (let x = 1; x < COLS - 1; x++) {
+                if (map[y][x] !== T.EMPTY) placed++;
+            }
+        }
+        wallProgress = Math.min(100, Math.round((placed / totalTiles) * 100));
+        document.getElementById('progressFill').style.width = wallProgress + '%';
+        document.getElementById('progressLabel').textContent = `Прогрес ремонту: ${wallProgress}%`;
+    }
+
+    // === Малювання ===
+    function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // Фон кімнати (повітря)
+        ctx.fillStyle = '#e8e0d0';
+        ctx.fillRect(OFFSET_X, OFFSET_Y, (COLS - 2) * TILE, (ROWS - 2) * TILE);
+
+        // Сітка
+        ctx.strokeStyle = 'rgba(0,0,0,0.06)';
+        ctx.lineWidth = 1;
+        for (let x = 1; x < COLS - 1; x++) {
+            ctx.beginPath();
+            ctx.moveTo(OFFSET_X + (x - 1) * TILE, OFFSET_Y);
+            ctx.lineTo(OFFSET_X + (x - 1) * TILE, OFFSET_Y + (ROWS - 2) * TILE);
+            ctx.stroke();
+        }
+        for (let y = 1; y < ROWS - 1; y++) {
+            ctx.beginPath();
+            ctx.moveTo(OFFSET_X, OFFSET_Y + (y - 1) * TILE);
+            ctx.lineTo(OFFSET_X + (COLS - 2) * TILE, OFFSET_Y + (y - 1) * TILE);
+            ctx.stroke();
+        }
+
+        // Малюємо всі клітинки
+        for (let y = 0; y < ROWS; y++) {
+            for (let x = 0; x < COLS; x++) {
+                const px = OFFSET_X + (x - 1) * TILE;
+                const py = OFFSET_Y + (y - 1) * TILE;
+                const tile = map[y][x];
+
+                if (tile === T.EMPTY) continue;
+
+                ctx.shadowColor = 'rgba(0,0,0,0.15)';
+                ctx.shadowBlur = 3;
+
+                switch (tile) {
+                    case T.FLOOR:
+                        ctx.fillStyle = '#4a8c5c';
+                        ctx.fillRect(px, py, TILE, TILE);
+                        ctx.fillStyle = 'rgba(0,0,0,0.08)';
+                        for (let i = 0; i < TILE; i += 8) {
+                            for (let j = 0; j < TILE; j += 6) {
+                                if ((i + j) % 4 === 0) ctx.fillRect(px + i, py + j, 4, 3);
+                            }
+                        }
+                        break;
+                    case T.CONCRETE:
+                        ctx.fillStyle = '#555566';
+                        ctx.fillRect(px, py, TILE, TILE);
+                        ctx.fillStyle = 'rgba(0,0,0,0.1)';
+                        for (let i = 0; i < TILE; i += 8) {
+                            for (let j = 0; j < TILE; j += 6) {
+                                if ((i + j) % 4 === 0) ctx.fillRect(px + i, py + j, 4, 3);
+                            }
+                        }
+                        break;
+
+                    case T.GASBLOCK:
+                        ctx.fillStyle = '#a0b8d8';
+                        ctx.fillRect(px, py, TILE, TILE);
+                        ctx.strokeStyle = '#90a8c8';
+                        ctx.lineWidth = 1;
+                        ctx.strokeRect(px, py, TILE, TILE);
+                        // Пупиришки
+                        ctx.fillStyle = 'rgba(255,255,255,0.2)';
+                        for (let i = 0; i < 3; i++) {
+                            ctx.beginPath();
+                            ctx.arc(px + 8 + i * 10, py + 8 + (i % 2) * 12, 3.5, 0, Math.PI * 2);
+                            ctx.fill();
+                        }
+                        break;
+                    case T.GASBLOCK_BUILT:
+                        ctx.fillStyle = '#8a8a8a';
+                        ctx.fillRect(px, py, TILE, TILE);
+                        ctx.strokeStyle = '#7a7a7a';
+                        ctx.lineWidth = 1;
+                        ctx.strokeRect(px, py, TILE, TILE);
+                        ctx.fillStyle = 'rgba(255,255,255,0.1)';
+                        for (let i = 0; i < 3; i++) {
+                            ctx.beginPath();
+                            ctx.arc(px + 8 + i * 10, py + 8 + (i % 2) * 12, 3, 0, Math.PI * 2);
+                            ctx.fill();
+                        }
+                        // Сліди піни
+                        ctx.fillStyle = 'rgba(245, 240, 216, 0.25)';
+                        ctx.fillRect(px, py, TILE, 2);
+                        ctx.fillRect(px, py + TILE - 2, TILE, 2);
+                        break;
+                    case T.GASBLOCK_FOAMED:
+                        ctx.fillStyle = '#a0b8d8';
+                        ctx.fillRect(px, py, TILE, TILE);
+                        ctx.strokeStyle = '#90a8c8';
+                        ctx.lineWidth = 1;
+                        ctx.strokeRect(px, py, TILE, TILE);
+                        ctx.fillStyle = 'rgba(255,255,255,0.2)';
+                        for (let i = 0; i < 3; i++) {
+                            ctx.beginPath();
+                            ctx.arc(px + 8 + i * 10, py + 8 + (i % 2) * 12, 3.5, 0, Math.PI * 2);
+                            ctx.fill();
+                        }
+                        // Смужки піни
+                        ctx.fillStyle = 'rgba(245, 240, 216, 0.5)';
+                        ctx.fillRect(px + 2, py + 4, TILE - 4, 3);
+                        ctx.fillRect(px + 2, py + 14, TILE - 4, 3);
+                        ctx.fillRect(px + 2, py + 24, TILE - 4, 3);
+                        break;
+                    case T.CEMENT:
+                        ctx.fillStyle = '#3a3028';
+                        ctx.fillRect(px, py, TILE, TILE);
+                        ctx.strokeStyle = '#2a221c';
+                        ctx.lineWidth = 1;
+                        ctx.strokeRect(px, py, TILE, TILE);
+                        ctx.fillStyle = 'rgba(255,255,255,0.06)';
+                        ctx.fillRect(px + 5, py + 5, 6, 6);
+                        ctx.fillRect(px + 18, py + 14, 5, 5);
+                        break;
+                    case T.FOAM:
+                        ctx.fillStyle = '#f5f0d8';
+                        ctx.fillRect(px, py, TILE, TILE);
+                        ctx.strokeStyle = '#e8e0c0';
+                        ctx.lineWidth = 1;
+                        ctx.strokeRect(px, py, TILE, TILE);
+                        ctx.fillStyle = 'rgba(255,255,255,0.2)';
+                        ctx.beginPath();
+                        ctx.arc(px + 10, py + 10, 5, 0, Math.PI * 2);
+                        ctx.fill();
+                        ctx.beginPath();
+                        ctx.arc(px + 22, py + 20, 4, 0, Math.PI * 2);
+                        ctx.fill();
+                        break;
+                    case T.WINDOW:
+                        ctx.fillStyle = '#80b8e0';
+                        ctx.fillRect(px, py, TILE, TILE);
+                        ctx.strokeStyle = '#6090b0';
+                        ctx.lineWidth = 2;
+                        ctx.strokeRect(px, py, TILE, TILE);
+                        ctx.beginPath();
+                        ctx.moveTo(px + TILE / 2, py);
+                        ctx.lineTo(px + TILE / 2, py + TILE);
+                        ctx.moveTo(px, py + TILE / 2);
+                        ctx.lineTo(px + TILE, py + TILE / 2);
+                        ctx.stroke();
+                        ctx.fillStyle = 'rgba(200,230,255,0.2)';
+                        ctx.fillRect(px + 2, py + 2, TILE - 4, TILE - 4);
+                        break;
+                    case T.DOOR:
+                        ctx.fillStyle = '#5a3a2a';
+                        ctx.fillRect(px, py, TILE, TILE);
+                        ctx.fillStyle = '#7a5a3a';
+                        ctx.fillRect(px + 3, py + 3, TILE - 6, TILE - 6);
+                        ctx.fillStyle = '#f0c040';
+                        ctx.beginPath();
+                        ctx.arc(px + TILE - 8, py + TILE / 2, 2.5, 0, Math.PI * 2);
+                        ctx.fill();
+                        break;
+                }
+                ctx.shadowBlur = 0;
+            }
+        }
+
+        // Лампочка на стелі
+        const lampX = OFFSET_X + ((COLS - 2) * TILE) / 2;
+        const lampY = OFFSET_Y - 8;
+        ctx.save();
+        const glow = ctx.createRadialGradient(lampX, lampY, 2, lampX, lampY, 60);
+        glow.addColorStop(0, 'rgba(255, 220, 150, 0.3)');
+        glow.addColorStop(1, 'rgba(255, 200, 100, 0)');
+        ctx.fillStyle = glow;
+        ctx.fillRect(OFFSET_X, OFFSET_Y - 20, (COLS - 2) * TILE, 30);
+        ctx.shadowColor = 'rgba(255, 220, 150, 0.5)';
+        ctx.shadowBlur = 12;
+        ctx.fillStyle = '#ffe8b0';
+        ctx.beginPath();
+        ctx.arc(lampX, lampY, 4, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.shadowBlur = 0;
+        ctx.strokeStyle = '#444';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(lampX, OFFSET_Y - 20);
+        ctx.lineTo(lampX, lampY - 4);
+        ctx.stroke();
+        ctx.restore();
+
+        // Підписи
+        ctx.fillStyle = 'rgba(0,0,0,0.2)';
+        ctx.font = '10px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('🚪 Вхід', OFFSET_X - 14, OFFSET_Y + (ROWS - 4) * TILE + TILE / 2 + 4);
+        ctx.fillText('🪟', OFFSET_X + (COLS - 2) * TILE + 10, OFFSET_Y + 3 * TILE + TILE / 2 + 4);
+        ctx.fillText('🪟', OFFSET_X - 14, OFFSET_Y + 3 * TILE + TILE / 2 + 4);
+    }
+
+    // === Перевірка, чи можна ставити газоблок (має стояти на твердій поверхні) ===
+    function canPlaceGasBlock(mapX, mapY) {
+        // Перевіряємо, що під цим блоком є тверда поверхня
+        const belowY = mapY + 1;
+        if (belowY >= ROWS) return false;
+        const below = map[belowY][mapX];
+        // Можна ставити на: зелену підлогу, бетон, вбудований газоблок, газоблок з піною, звичайний газоблок
+        return below === T.FLOOR || below === T.CONCRETE || below === T.GASBLOCK_BUILT || below === T.GASBLOCK_FOAMED || below === T.GASBLOCK;
+    }
+
+
+    // === Поставити блок ===
+    function placeBlock(gridX, gridY) {
+        const mapX = gridX + 1;
+        const mapY = gridY + 1;
+
+        if (mapX < 1 || mapY < 1 || mapX >= COLS - 1 || mapY >= ROWS - 1) return false;
+
+        const existingTile = map[mapY][mapX];
+
+        // Піна або цемент на газоблок
+        if ((selectedMaterial === 'foam' || selectedMaterial === 'cement') && existingTile === T.GASBLOCK) {
+            if (selectedMaterial === 'foam') {
+                if (resources.foam < 1) { showToast('😤 Немає клей-піни! Купи спочатку.'); return false; }
+                resources.foam--;
+                showToast('🫧 Піну залито! Тепер можна ставити наступний газоблок зверху.');
+            } else {
+                if (resources.cement < 1) { showToast('😤 Немає цементу! Купи спочатку.'); return false; }
+                resources.cement--;
+                showToast('🧊 Цемент залито! Тепер можна ставити наступний газоблок зверху.');
+            }
+            map[mapY][mapX] = T.GASBLOCK_FOAMED;
+            updateUI();
+            draw();
+            return true;
+        }
+
+
+        // Газоблок на газоблок з піною — вбудовуємо нижній і ставимо новий зверху
+        if (selectedMaterial === 'gasblock' && existingTile === T.GASBLOCK_FOAMED) {
+            // Перевіряємо, чи вистачить блоків (1 на вбудовування + 1 на новий зверху)
+            const aboveY = mapY - 1;
+            const canStack = aboveY >= 1 && map[aboveY][mapX] === T.EMPTY;
+            const needed = canStack ? 2 : 1;
+            if (resources.gasBlocks < needed) {
+                showToast(`😤 Потрібно ${needed} газоблоки! Купи спочатку.`);
+                return false;
+            }
+            // Вбудовуємо цей блок (він стає сірим)
+            map[mapY][mapX] = T.GASBLOCK_BUILT;
+            resources.gasBlocks--;
+            // Ставимо новий газоблок зверху (якщо там пусто і не виходить за межі)
+            if (canStack) {
+                resources.gasBlocks--;
+                map[aboveY][mapX] = T.GASBLOCK;
+                showToast('🧱 Газоблок вбудовано! Новий блок став зверху — стіна росте!');
+            } else {
+                showToast('🧱 Газоблок вбудовано! Стіна зміцніла.');
+            }
+            updateUI();
+            draw();
+            return true;
+        }
+
+
+
+        if (existingTile !== T.EMPTY) {
+            if (existingTile === T.GASBLOCK) {
+                showToast('🧱 Тут газоблок. Залий його піною або цементом!');
+
+            } else if (existingTile === T.GASBLOCK_FOAMED) {
+                showToast('🧱🫧 Тут газоблок з піною. Став зверху газоблок!');
+            } else if (existingTile === T.GASBLOCK_BUILT) {
+                showToast('🧱 Вбудований газоблок. Можеш ставити зверху!');
+            } else if (existingTile === T.FOAM) {
+                showToast('🫧 Тут вже піна.');
+            } else if (existingTile === T.CEMENT) {
+                showToast('🧊 Тут вже цемент.');
+            } else if (existingTile === T.FLOOR) {
+                showToast('🟩 Це підлога.');
+            } else if (existingTile === T.CONCRETE) {
+                showToast('🏗️ Це бетон.');
+
+            } else if (existingTile === T.WINDOW) {
+                showToast('🪟 Тут вікно.');
+            } else if (existingTile === T.DOOR) {
+                showToast('🚪 Це двері.');
+            }
+            return false;
+        }
+
+        let tileType, name;
+
+        if (selectedMaterial === 'gasblock') {
+            if (resources.gasBlocks < 1) { showToast('😤 Немає газоблоків! Купи спочатку.'); return false; }
+            resources.gasBlocks--;
+            tileType = T.GASBLOCK;
+            name = 'газоблок';
+
+        } else if (selectedMaterial === 'cement') {
+            // Цемент тепер тільки для заливання газоблоків
+            showToast('🧊 Цемент треба наносити на газоблок! Клікни на газоблок.');
+            return false;
+        } else if (selectedMaterial === 'foam') {
+            // Піну можна наносити тільки на газоблок
+            showToast('🫧 Піну треба наносити на газоблок! Клікни на газоблок.');
+            return false;
+        }
+
+
+        map[mapY][mapX] = tileType;
+        showToast(`✅ Поставив ${name}`);
+        updateUI();
+        draw();
+        return true;
+    }
+
+    // === Обробка кліку ===
+    canvas.addEventListener('click', (e) => {
+        const rect = canvas.getBoundingClientRect();
+        const scaleX = canvas.width / rect.width;
+        const scaleY = canvas.height / rect.height;
+        const mouseX = (e.clientX - rect.left) * scaleX;
+        const mouseY = (e.clientY - rect.top) * scaleY;
+
+        const gridX = Math.floor((mouseX - OFFSET_X) / TILE);
+        const gridY = Math.floor((mouseY - OFFSET_Y) / TILE);
+
+        console.log('Click at', mouseX, mouseY, 'grid', gridX, gridY, 'resources', resources);
+
+        if (gridX >= 0 && gridY >= 0 && gridX < COLS - 2 && gridY < ROWS - 2) {
+            placeBlock(gridX, gridY);
+        } else {
+            console.log('Out of bounds');
+        }
+    });
+
+
+    // === Купівля ===
+    document.getElementById('buyGasBlocks').addEventListener('click', () => {
+        if (resources.money >= 50) {
+            resources.money -= 50;
+            resources.gasBlocks += 10;
+            updateUI();
+            showToast('🧱 Куплено 10 газоблоків!');
+        } else {
+            showToast('😤 Не вистачає кронів!');
+        }
+    });
+
+    document.getElementById('buyCement').addEventListener('click', () => {
+        if (resources.money >= 30) {
+            resources.money -= 30;
+            resources.cement += 10;
+            updateUI();
+            showToast('🧊 Куплено 10 цементу!');
+        } else {
+            showToast('😤 Не вистачає кронів!');
+        }
+    });
+
+    document.getElementById('buyFoam').addEventListener('click', () => {
+        if (resources.money >= 40) {
+            resources.money -= 40;
+            resources.foam += 10;
+            updateUI();
+            showToast('🫧 Куплено 10 клей-піни!');
+        } else {
+            showToast('😤 Не вистачає кронів!');
+        }
+    });
+
+    document.getElementById('earnMoney').addEventListener('click', () => {
+        resources.money += 100;
+        updateUI();
+        showToast('💰 Заробив 100 кронів!');
+    });
+
+    // === Вибір матеріалу ===
+    document.querySelectorAll('.material-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('.material-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            selectedMaterial = btn.dataset.material;
+            showToast(`Обрано: ${btn.textContent.trim()}`);
+        });
+    });
+
+    // === Ініціалізація ===
+    updateUI();
+    draw();
+
+    setTimeout(() => {
+        showToast('🧱 Будуй стіну! Газоблоки ставляться один на одного.', 3000);
+    }, 500);
+</script>
+
+</body>
+</html>

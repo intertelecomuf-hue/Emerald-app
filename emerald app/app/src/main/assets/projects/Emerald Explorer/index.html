@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Emerald Explorer</title>
+    <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+    <!-- Boot Animation Overlay (при запуску браузера) -->
+    <div id="bootOverlay">
+        <canvas id="bootCanvas" width="200" height="200"></canvas>
+        <div class="boot-terminal" id="bootTerminal">
+            <div class="line" data-text="> Zapusk Emerald Explorer..."></div>
+            <div class="line" data-text="> Zavantazhennya moduliv perehlyadu..."></div>
+            <div class="line" data-text="> Initsializatsiya rushiya..."></div>
+            <div class="line" data-text="> Pidklyuchennya do merezhi..."></div>
+            <div class="line ok" data-text="OK  Emerald Explorer gotovyi."></div>
+            <div class="line"><span class="cursor"></span></div>
+        </div>
+        <div class="boot-progress-wrap" id="bootProgress">
+            <div class="boot-progress-track">
+                <div class="boot-progress-fill" id="bootProgressFill"></div>
+            </div>
+            <div class="boot-progress-label" id="bootProgressLabel">0%</div>
+        </div>
+    </div>
+
+    <!-- Loading Overlay (при завантаженні сайту) -->
+    <div id="loadingOverlay" class="loading-overlay hidden">
+        <canvas id="loadingCanvas" width="200" height="200"></canvas>
+        <div class="loading-terminal" id="loadingTerminal">
+            <div class="line" data-text="> Zavantazhennya..."></div>
+            <div class="line" data-text="> Otrymannya danyh..."></div>
+            <div class="line ok" data-text="OK  Gotovo."></div>
+            <div class="line"><span class="cursor"></span></div>
+        </div>
+        <div class="boot-progress-wrap visible" id="loadingProgress">
+            <div class="boot-progress-track">
+                <div class="boot-progress-fill" id="loadingProgressFill"></div>
+            </div>
+            <div class="boot-progress-label" id="loadingProgressLabel">0%</div>
+        </div>
+    </div>
+
+    <!-- Головне вікно браузера -->
+    <div id="browserWindow" class="browser-window hidden">
+        <!-- Верхня панель (Chrome-like) -->
+        <div class="chrome-toolbar">
+            <!-- Кнопки навігації -->
+            <div class="nav-buttons">
+                <button id="backBtn" class="nav-btn" title="Назад">◀</button>
+                <button id="forwardBtn" class="nav-btn" title="Вперед">▶</button>
+                <button id="reloadBtn" class="nav-btn" title="Оновити">⟳</button>
+            </div>
+
+            <!-- Адресний рядок -->
+            <div class="address-bar">
+                <div class="address-bar-icon">🔒</div>
+                <input type="text" id="addressInput" placeholder="Введіть URL або пошуковий запит..." value="https://www.google.com" />
+                <button id="goBtn" class="go-btn" title="Перейти">→</button>
+            </div>
+
+            <!-- Кнопки праворуч -->
+            <div class="right-buttons">
+                <button id="loginBtn" class="toolbar-btn login-btn" title="Увійти">👤</button>
+                <div id="userProfile" class="user-profile hidden">
+                    <div class="profile-avatar" id="profileAvatar">👤</div>
+                    <div class="profile-info">
+                        <span class="profile-name" id="profileName">Користувач</span>
+                        <span class="profile-email" id="profileEmail">user@email.com</span>
+                    </div>
+                    <button id="logoutBtn" class="logout-btn" title="Вийти">✕</button>
+                </div>
+                <button id="menuBtn" class="toolbar-btn" title="Меню">⋮</button>
+            </div>
+        </div>
+
+        <!-- Панель закладок -->
+        <div class="bookmarks-bar" id="bookmarksBar">
+            <div class="bookmark" data-url="https://www.google.com">
+                <svg class="bk-icon" viewBox="0 0 24 24" width="16" height="16"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+                Google
+            </div>
+            <div class="bookmark" data-url="https://www.youtube.com">
+                <svg class="bk-icon" viewBox="0 0 24 24" width="16" height="16"><path fill="#FF0000" d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
+                YouTube
+            </div>
+            <div class="bookmark" data-url="https://github.com">
+                <svg class="bk-icon" viewBox="0 0 24 24" width="16" height="16"><path fill="#fff" d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg>
+                GitHub
+            </div>
+            <div class="bookmark" data-url="https://chat.openai.com">
+                <svg class="bk-icon" viewBox="0 0 24 24" width="16" height="16"><path fill="#10A37F" d="M11.97 2.01c-.52 0-1.04.1-1.53.3A5.99 5.99 0 0 0 6.1 6.1a5.99 5.99 0 0 0-3.79 4.34 5.99 5.99 0 0 0 1.2 5.56 5.99 5.99 0 0 0 4.34 3.79 5.99 5.99 0 0 0 5.56-1.2 5.99 5.99 0 0 0 3.79-4.34 5.99 5.99 0 0 0-1.2-5.56 5.99 5.99 0 0 0-4.34-3.79 5.99 5.99 0 0 0-1.59-.19zm.03 2.99a3 3 0 1 1 0 6 3 3 0 0 1 0-6zm-5.5 3.5a3 3 0 1 1 0 6 3 3 0 0 1 0-6zm11 0a3 3 0 1 1 0 6 3 3 0 0 1 0-6zm-5.5 5.5a3 3 0 1 1 0 6 3 3 0 0 1 0-6z"/></svg>
+                ChatGPT
+            </div>
+            <div class="bookmark-add" id="addBookmarkBtn">+ Додати</div>
+        </div>
+
+        <!-- Вкладки -->
+        <div class="tabs-bar" id="tabsBar">
+            <div class="tab active" data-tab-id="0">
+                <span class="tab-favicon">🌐</span>
+                <span class="tab-title">Нова вкладка</span>
+                <button class="tab-close">✕</button>
+            </div>
+            <button id="newTabBtn" class="new-tab-btn" title="Нова вкладка">+</button>
+        </div>
+
+        <!-- Контент (iframe для сайтів) -->
+        <div class="content-area" id="contentArea">
+            <div class="new-tab-page" id="newTabPage">
+                <div class="ntp-logo">💚</div>
+                <h1 class="ntp-title">Emerald Explorer</h1>
+                <div class="ntp-search">
+                    <input type="text" id="ntpSearchInput" placeholder="Введіть URL або пошуковий запит..." />
+                    <button id="ntpSearchBtn">Пошук</button>
+                </div>
+                <div class="ntp-shortcuts">
+                    <div class="shortcut" data-url="https://www.google.com">
+                        <div class="shortcut-icon">
+                            <svg viewBox="0 0 24 24" width="28" height="28"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+                        </div>
+                        <span>Google</span>
+                    </div>
+                    <div class="shortcut" data-url="https://www.youtube.com">
+                        <div class="shortcut-icon">
+                            <svg viewBox="0 0 24 24" width="28" height="28"><path fill="#FF0000" d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
+                        </div>
+                        <span>YouTube</span>
+                    </div>
+                    <div class="shortcut" data-url="https://github.com">
+                        <div class="shortcut-icon">
+                            <svg viewBox="0 0 24 24" width="28" height="28"><path fill="#fff" d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg>
+                        </div>
+                        <span>GitHub</span>
+                    </div>
+                    <div class="shortcut" data-url="https://chat.openai.com">
+                        <div class="shortcut-icon">
+                            <svg viewBox="0 0 24 24" width="28" height="28"><path fill="#10A37F" d="M11.97 2.01c-.52 0-1.04.1-1.53.3A5.99 5.99 0 0 0 6.1 6.1a5.99 5.99 0 0 0-3.79 4.34 5.99 5.99 0 0 0 1.2 5.56 5.99 5.99 0 0 0 4.34 3.79 5.99 5.99 0 0 0 5.56-1.2 5.99 5.99 0 0 0 3.79-4.34 5.99 5.99 0 0 0-1.2-5.56 5.99 5.99 0 0 0-4.34-3.79 5.99 5.99 0 0 0-1.59-.19zm.03 2.99a3 3 0 1 1 0 6 3 3 0 0 1 0-6zm-5.5 3.5a3 3 0 1 1 0 6 3 3 0 0 1 0-6zm11 0a3 3 0 1 1 0 6 3 3 0 0 1 0-6zm-5.5 5.5a3 3 0 1 1 0 6 3 3 0 0 1 0-6z"/></svg>
+                        </div>
+                        <span>ChatGPT</span>
+                    </div>
+                    <div class="shortcut" data-url="https://www.wikipedia.org">
+                        <div class="shortcut-icon">
+                            <svg viewBox="0 0 24 24" width="28" height="28"><path fill="#fff" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-2.03.77-3.88 2.02-5.28l.16.07c.39.17.73.41 1.04.69.31.28.57.6.78.96.21.36.37.74.47 1.14.1.4.15.8.15 1.2 0 .36-.06.7-.18 1.02-.12.32-.28.62-.48.9-.2.28-.44.53-.7.75-.26.22-.54.4-.82.55l-.44.22c-.26.13-.5.28-.72.46-.22.18-.4.38-.55.6-.15.22-.26.46-.33.72-.07.26-.1.52-.1.78 0 .28.04.56.12.84.08.28.2.55.36.82.16.27.36.52.6.76.24.24.52.46.84.66.32.2.68.38 1.08.54.4.16.84.3 1.33.42.49.12 1.02.22 1.6.3.58.08 1.2.14 1.86.18.66.04 1.36.06 2.1.06.74 0 1.44-.02 2.1-.06.66-.04 1.28-.1 1.86-.18.58-.08 1.11-.18 1.6-.3.49-.12.93-.26 1.33-.42.4-.16.76-.34 1.08-.54.32-.2.6-.42.84-.66.24-.24.44-.49.6-.76.16-.27.28-.54.36-.82.08-.28.12-.56.12-.84 0-.26-.03-.52-.1-.78-.07-.26-.18-.5-.33-.72-.15-.22-.33-.42-.55-.6-.22-.18-.46-.33-.72-.46l-.44-.22c-.28-.15-.56-.33-.82-.55-.26-.22-.5-.47-.7-.75-.2-.28-.36-.58-.48-.9-.12-.32-.18-.66-.18-1.02 0-.4.05-.8.15-1.2.1-.4.26-.78.47-1.14.21-.36.47-.68.78-.96.31-.28.65-.52 1.04-.69l.16-.07C19.23 8.12 20 9.97 20 12c0 4.08-3.05 7.44-7 7.93V14h2l-1-2h-1v-2c0-.55.45-1 1-1h1l1-2h-2c-1.66 0-3 1.34-3 3v2h-1l-1 2h2v5.93z"/></svg>
+                        </div>
+                        <span>Wikipedia</span>
+                    </div>
+                </div>
+            </div>
+            <div class="iframe-container" id="iframeContainer"></div>
+        </div>
+
+        <!-- Нижня панель статусу -->
+        <div class="status-bar" id="statusBar">
+            <span class="status-text" id="statusText">Готово</span>
+            <span class="status-url" id="statusUrl"></span>
+        </div>
+    </div>
+
+    <!-- Модальне вікно входу -->
+    <div class="login-modal-overlay" id="loginModalOverlay">
+        <div class="login-modal" style="position: relative;">
+            <button class="login-close-btn" id="loginCloseBtn">✕</button>
+            <div class="login-modal-logo">💚</div>
+            <div class="login-modal-title">Emerald Explorer</div>
+            <div class="login-modal-subtitle">Увійдіть, щоб синхронізувати налаштування</div>
+            <div class="login-field">
+                <label>Email (акаунт EMERALD.inc)</label>
+                <input type="email" id="loginEmail" placeholder="username@emerald.com" />
+            </div>
+            <div class="login-field">
+                <label>Пароль</label>
+                <input type="password" id="loginPassword" placeholder="••••••••" />
+            </div>
+            <button class="login-submit-btn" id="loginSubmitBtn">Увійти</button>
+            <div class="login-error" id="loginError">Невірний email або пароль</div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
