@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<link rel="icon" href="favicon.png" type="image/png">
+<title>Таємниці Зачарованого Лісу</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#000;overflow:hidden;font-family:Segoe UI,sans-serif;cursor:crosshair}
+#c{display:block;width:100vw;height:100vh;image-rendering:pixelated}
+#ui{position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:10}
+#ch{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:rgba(255,255,255,0.4);font-size:24px;text-shadow:0 0 4px #000}
+#hud{position:absolute;bottom:20px;left:50%;transform:translateX(-50%);display:flex;gap:20px;background:rgba(0,10,0,0.7);border:1px solid rgba(80,120,60,0.4);border-radius:10px;padding:10px 20px;backdrop-filter:blur(5px)}
+.hi{color:#8fbc6b;font-size:14px;display:flex;align-items:center;gap:6px}
+.hi .v{color:#c8dcc8;font-weight:bold;min-width:18px}
+#inv{position:absolute;bottom:75px;left:50%;transform:translateX(-50%);display:flex;gap:4px}
+.is{width:36px;height:36px;background:rgba(0,10,0,0.6);border:1px solid rgba(80,120,60,0.3);border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:14px;color:#8fbc6b}
+.is.f{border-color:rgba(120,180,80,0.6);background:rgba(30,60,30,0.6)}
+#msg{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:#f0d080;font-size:24px;font-weight:bold;text-shadow:0 0 20px #000;text-align:center;opacity:0;transition:opacity .5s;max-width:500px;line-height:1.4;pointer-events:none}
+#msg.s{opacity:1}
+#msg .sub{font-size:14px;color:#c8dcc8;font-weight:normal;margin-top:8px}
+#mm{position:absolute;top:10px;right:10px;width:140px;height:140px;border:2px solid rgba(80,120,60,0.4);border-radius:6px;background:rgba(0,10,0,0.6);backdrop-filter:blur(3px)}
+#mm canvas{width:100%;height:100%;border-radius:4px}
+#ql{position:absolute;top:10px;left:10px;color:#8fbc6b;font-size:13px;background:rgba(0,10,0,0.6);border:1px solid rgba(80,120,60,0.3);border-radius:6px;padding:8px 12px;max-width:200px;backdrop-filter:blur(3px);line-height:1.4}
+#ql .t{font-weight:bold;color:#f0d080;font-size:14px;margin-bottom:3px}
+#ql .s{color:#aacc88;font-size:12px}
+#chint{position:absolute;bottom:120px;left:50%;transform:translateX(-50%);color:rgba(140,180,120,0.3);font-size:12px;text-align:center;letter-spacing:1px}
+@media(max-width:768px){
+#hud{gap:12px;padding:6px 12px;font-size:12px}
+#mm{width:100px;height:100px}
+#ql{font-size:11px;max-width:150px;padding:6px 8px}
+#msg{font-size:18px}
+#inv{bottom:65px}
+.is{width:28px;height:28px;font-size:11px}
+}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="ui">
+<div id="ch">✚</div>
+<div id="ql"><div class="t">📜 Квест</div><div class="s" id="qs">Знайти Серце Лісу</div></div>
+<div id="mm"><canvas id="mc" width="140" height="140"></canvas></div>
+<div id="inv"></div>
+<div id="chint">WASD — рух | Миша — огляд | E — дія | R — рестарт</div>
+<div id="hud">
+<div class="hi">❤️<span class="v" id="hpV">10</span></div>
+<div class="hi">⚔️<span class="v" id="atV">2</span></div>
+<div class="hi">⭐<span class="v" id="xpV">0</span></div>
+</div>
+<div id="msg"></div>
+</div>
+<script>
+const c=document.getElementById('c'),cx=c.getContext('2d');
+const mc=document.getElementById('mc'),mxc=mc.getContext('2d');
+let W,H;
+function rs(){W=c.width=window.innerWidth;H=c.height=window.innerHeight}
+rs();window.addEventListener('resize',rs);
+
+const MS=24;
+const MP=[
+[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+[1,0,0,0,0,1,0,0,0,0,0,1,0,0,0,0,0,1,0,0,0,0,0,1],
+[1,0,3,0,0,1,0,3,3,0,0,0,0,3,0,0,0,0,0,3,3,0,0,1],
+[1,0,0,0,0,0,0,0,0,0,3,0,0,0,0,3,0,0,0,0,0,0,0,1],
+[1,0,0,3,0,0,0,0,0,0,0,0,3,0,0,0,0,0,3,0,0,0,0,1],
+[1,1,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,1,1],
+[1,0,0,0,0,0,0,0,0,3,0,0,0,0,3,0,0,0,0,0,0,0,0,1],
+[1,0,3,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,3,0,0,1],
+[1,0,0,0,0,0,3,0,0,0,0,5,0,0,0,0,0,3,0,0,0,0,0,1],
+[1,0,0,0,3,0,0,0,0,0,0,0,0,0,0,0,0,0,0,3,0,0,0,1],
+[1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+[1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+[1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+[1,0,0,0,3,0,0,0,0,0,0,0,0,0,0,0,0,0,0,3,0,0,0,1],
+[1,0,0,0,0,0,3,0,0,0,0,0,0,0,0,0,0,3,0,0,0,0,0,1],
+[1,0,3,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,3,0,0,1],
+[1,0,0,0,0,0,0,0,0,3,0,0,0,0,3,0,0,0,0,0,0,0,0,1],
+[1,1,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,1,1],
+[1,0,0,3,0,0,0,0,0,0,0,0,3,0,0,0,0,0,3,0,0,0,0,1],
+[1,0,0,0,0,0,0,0,0,0,3,0,0,0,0,3,0,0,0,0,0,0,0,1],
+[1,0,3,0,0,0,0,3,3,0,0,0,0,3,0,0,0,0,0,3,3,0,0,1],
+[1,0,0,0,0,1,0,0,0,0,0,1,0,0,0,0,0,1,0,0,0,0,0,1],
+[1,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]];
+
+const objs=[
+{x:11,y:8,type:'altar',collected:false},
+{x:18,y:3,type:'chest',collected:false},
+{x:4,y:20,type:'chest',collected:false},
+{x:12,y:15,type:'npc_old',collected:false},
+{x:6,y:6,type:'npc_elf',collected:false},
+{x:20,y:12,type:'tower',collected:false}];
+
+const enemies=[
+{x:7,y:5,hp:3,maxHp:3,alive:true,type:'boar',spd:.02,aggro:3},
+{x:15,y:18,hp:3,maxHp:3,alive:true,type:'boar',spd:.02,aggro:3},
+{x:10,y:14,hp:2,maxHp:2,alive:true,type:'wolf',spd:.03,aggro:4},
+{x:14,y:10,hp:2,maxHp:2,alive:true,type:'wolf',spd:.03,aggro:4},
+{x:5,y:16,hp:2,maxHp:2,alive:true,type:'wolf',spd:.03,aggro:4}];
+
+const g={hp:10,maxHp:10,atk:2,xp:0,inv:[],flags:{},qs:'Знайти Серце Лісу',over:false,won:false};
+const p={x:2.5,y:2.5,dir:0,fov:Math.PI/3,spd:.04};
+let mx=W/2,my=H/2,locked=false;
+const keys={};
+let msgT='',msgTm=0,msgS='';
+
+function iw(x,y){const mx=Math.floor(x),my=Math.floor(y);return mx<0||mx>=MS||my<0||my>=MS||MP[my][mx]!==0}
+function d(x1,y1,x2,y2){return Math.sqrt((x2-x1)**2+(y2-y1)**2)}
+function sm(t,s='',dur=3000){msgT=t;msgS=s;msgTm=dur;const e=document.getElementById('msg');e.innerHTML=t+(s?`<div class="sub">${s}</div>`:'');e.classList.add('s')}
+function hm(){document.getElementById('msg').classList.remove('s')}
+function uh(){
+document.getElementById('hpV').textContent=g.hp;
+document.getElementById('atV').textContent=g.atk;
+document.getElementById('xpV').textContent=g.xp;
+document.getElementById('qs').textContent=g.qs;
+const ic=document.getElementById('inv');ic.innerHTML='';
+for(let i=0;i<6;i++){const s=document.createElement('div');s.className='is';if(g.inv[i]){s.classList.add('f');s.textContent=g.inv[i]}ic.appendChild(s)}
+}
+function ai(it){if(g.inv.length<6){g.inv.push(it);uh();return true}sm('🎒 Інвентар повний!');return false}
+function ri(it){const i=g.inv.indexOf(it);if(i!==-1){g.inv.splice(i,1);uh();return true}return false}
+function hi(it){return g.inv.includes(it)}
+
+function interact(){
+if(g.over)return;
+let near=null,nearD=Infinity;
+for(const o of objs){if(o.collected)continue;const dd=d(p.x,p.y,o.x+.5,o.y+.5);if(dd<2&&dd<nearD){near=o;nearD=dd}}
+if(!near){
+for(const e of enemies){if(!e.alive)continue;if(d(p.x,p.y,e.x,e.y)<2){const dmg=g.atk+Math.floor(Math.random()*2);e.hp-=dmg;sm('⚔️ Удар! -'+dmg+' HP',e.hp<=0?'Ворог переможений!':'У ворога '+e.hp+' HP');if(e.hp<=0){e.alive=false;g.xp+=2;uh()}return}}
+sm('🤷 Нічого поруч','Підійди ближче');return
+}
+switch(near.type){
+case'altar':if(hi('Старий ключ')){sm('🔑 Вівтар відкрито!','Меч Лісу (+2 атаки)!');g.atk+=2;g.xp+=3;ri('Старий ключ');near.collected=true;g.qs='Знайди половину Серця в печері'}else sm('🪨 Вівтар','Потрібен ключ. Шукай під корінням.');break;
+case'chest':const rw=['Старий ключ','Світний камінь','Зілля здоров\'я','Срібний амулет'];const r=rw[Math.floor(Math.random()*rw.length)];if(r==='Зілля здоров\'я'){g.hp=Math.min(g.hp+3,g.maxHp);sm('📦 +3 HP!')}else{ai(r);sm('📦 Знайдено: '+r+'!')}g.xp+=1;near.collected=true;break;
+case'npc_old':if(!g.flags.metOld){g.flags.metOld=true;ai('Світний камінь');g.qs='Знайди половину Серця в печері';sm('🧙 Марена','"Візьми Світний камінь. Темний Лорд у вежі."')}else sm('🧙 Марена','"Поспішай, дитино."');break;
+case'npc_elf':if(!g.flags.metElf){g.flags.metElf=true;ai('Ельфійський плащ');g.xp+=2;sm('🧝 Ельф','"Плащ зробить тебе непомітним."')}else sm('🧝 Ельф','"Світло — твоя зброя."');break;
+case'tower':if(hi('Половина Серця Лісу')){sm('🏰 Вежа','Ти входиш...');g.qs='Переможи Темного Лорда';setTimeout(finalBattle,1500)}else sm('🏰 Вежа','Двері зачинені магією.');break;
+}
+uh();
+}
+
+function finalBattle(){
+let lordDmg=0;
+for(let r=0;r<5;r++)lordDmg+=2+Math.floor(Math.random()*3);
+g.hp-=lordDmg;
+if(g.hp<=0){g.hp=0;g.over=true;sm('💀 Ти загинув/загинула...','Темний Лорд переміг.',1e4);uh();return}
+g.xp+=10;g.won=true;g.over=true;g.qs='✅ Ліс врятовано!';
+let ep=hi('Світний камінь')&&hi('Ельфійський плащ')?'Темний Лорд переможений світлом! 🌟':g.xp>=15?'Сила та мудрість перемогли! 🌿':'Ліс врятовано! 🌲';
+sm('🏆 Перемога! '+ep,'⭐ +10 досвіду. HP: '+g.hp+'/'+g.maxHp,15e3);uh()
+}
+
+// Текстури
+function mkTex(w,h,fn){const c=document.createElement('canvas');c.width=w;c.height=h;fn(c.getContext('2d'),w,h);return c}
+const tTree=mkTex(64,64,(cx,w,h)=>{
+cx.fillStyle='#3d2b1f';cx.fillRect(0,0,w,h);
+for(let i=0;i<200;i++){const x=Math.random()*w,y=Math.random()*h,s=40+Math.random()*40;cx.fillStyle=`rgb(${s+20},${s},${s-10})`;cx.fillRect(x,y,2,4+Math.random()*6)}
+for(let i=0;i<12;i++){const x=Math.random()*w;cx.strokeStyle=`rgba(20,15,10,${.2+Math.random()*.3})`;cx.lineWidth=1;cx.beginPath();cx.moveTo(x,0);cx.quadraticCurveTo(x+(Math.random()-.5)*10,h*.5,x+(Math.random()-.5)*10,h);cx.stroke()}
+});
+const tLeaf=mkTex(64,64,(cx,w,h)=>{
+const cs=['#2d5a1e','#3a7a28','#1e4a12','#4a8a32'];
+for(let i=0;i<300;i++){const x=Math.random()*w,y=Math.random()*h;cx.fillStyle=cs[Math.floor(Math.random()*cs.length)];cx.beginPath();cx.arc(x,y,2+Math.random()*4,0,Math.PI*2);cx.fill()}
+});
+const tStone=mkTex(64,64,(cx,w,h)=>{
+const b=60+Math.random()*30;cx.fillStyle=`rgb(${b},${b-10},${b-20})`;cx.fillRect(0,0,w,h);
+for(let i=0;i<150;i++){const x=Math.random()*w,y=Math.random()*h,s=50+Math.random()*40;cx.fillStyle=`rgba(${s},${s-10},${s-20},${.3+Math.random()*.4})`;cx.fillRect(x,y,3+Math.random()*5,2+Math.random()*4)}
+});
+const tBush=mkTex(64,64,(cx,w,h)=>{
+const cs=['#2a5a1a','#3a6a28','#1e4a12','#4a7a32'];
+for(let i=0;i<200;i++){const x=Math.random()*w,y=Math.random()*h;cx.fillStyle=cs[Math.floor(Math.random()*cs.length)];cx.beginPath();cx.arc(x,y,3+Math.random()*6,0,Math.PI*2);cx.fill()}
+});
+const tGnd=mkTex(64,64,(cx,w,h)=>{
+const b=30+Math.random()*20;cx.fillStyle=`rgb(${b+10},${b+30},${b})`;cx.fillRect(0,0,w,h);
+for(let i=0;i<100;i++){const x=Math.random()*w,y=Math.random()*h,g=40+Math.random()*40;cx.fillStyle=`rgba(${g-10},${g+10},${g-20},${.2+Math.random()*.3})`;cx.fillRect(x,y,2+Math.random()*3,2+Math.random()*3)}
+for(let i=0;i<60;i++){const x=Math.random()*w,y=Math.random()*h;cx.strokeStyle=`rgba(50,120,30,${.2+Math.random()*.3})`;cx.lineWidth=1;cx.beginPath();cx.moveTo(x,y);cx.lineTo(x+(Math.random()-.5)*4,y-4-Math.random()*6);cx.stroke()}
+});
+const tTwr=mkTex(64,64,(cx,w,h)=>{
+cx.fillStyle='#2a2a2a';cx.fillRect(0,0,w,h);
+for(let i=0;i<80;i++){const x=Math.random()*w,y=Math.random()*h,s=30+Math.random()*30;cx.fillStyle=`rgba(${s},${s},${s},${.3+Math.random()*.4})`;cx.fillRect(x,y,6+Math.random()*8,4+Math.random()*6)}
+});
+const tAlt=mkTex(64,64,(cx,w,h)=>{
+cx.fillStyle='#4a3a2a';cx.fillRect(0,0,w,h);
+for(let i=0;i<50;i++){const x=Math.random()*w,y=Math.random()*h;cx.fillStyle=`rgba(200,180,100,${.1+Math.random()*.2})`;cx.beginPath();cx.arc(x,y,2+Math.random()*4,0,Math.PI*2);cx.fill()}
+});
+
+function texForTile(t){switch(t){case 1:return tTree;case 2:return tStone;case 3:return tBush;case 5:return tAlt;case 6:return tTwr;default:return tGnd}}
+
+function render(){
+const sg=cx.createLinearGradient(0,0,0,H);
+sg.addColorStop(0,'#0a1a0a');sg.addColorStop(.3,'#1a3a1a');sg.addColorStop(.6,'#2a4a2a');sg.addColorStop(1,'#3a5a3a');
+cx.fillStyle=sg;cx.fillRect(0,0,W,H);
+const fg=cx.createLinearGradient(0,H/2,0,H);
+fg.addColorStop(0,'#1a2a1a');fg.addColorStop(.5,'#2a3a2a');fg.addColorStop(1,'#1a2a1a');
+cx.fillStyle=fg;cx.fillRect(0,H/2,W,H/2);
+
+const nr=W,step=p.fov/nr,sa=p.dir-p.fov/2;
+for(let i=0;i<nr;i++){
+const a=sa+i*step,si=Math.sin(a),co=Math.cos(a);
+let dist=0,hit=false,ht=0,wx=0;
+while(!hit&&dist<20){dist+=.02;const tx=p.x+co*dist,ty=p.y+si*dist,mx=Math.floor(tx),my=Math.floor(ty);
+if(mx<0||mx>=MS||my<0||my>=MS){hit=true;dist=20;break}
+const tl=MP[my][mx];if(tl!==0){hit=true;ht=tl;const px=p.x+co*(dist-.02),py=p.y+si*(dist-.02);wx=Math.floor(px)!==mx?ty-my:tx-mx}}
+const cd=dist*Math.cos(a-p.dir),wh=H/cd,wt=(H-wh)/2,sh=Math.max(.2,1-cd/20);
+if(hit&&ht>0){const tex=texForTile(ht),tw=tex.width,tx=Math.floor(wx*tw)%tw;cx.drawImage(tex,tx,0,1,tex.height,i,wt,1,wh);cx.fillStyle=`rgba(0,0,0,${1-sh})`;cx.fillRect(i,wt,1,wh)}
+for(let y=Math.floor(H/2);y<H;y++){const fd=H/(2*(y-H/2)||1),fc=fd/Math.cos(a-p.dir),fx=p.x+co*fc,fy=p.y+si*fc;const px=tGnd.getImageData(Math.abs(Math.floor(fx))%64,Math.abs(Math.floor(fy))%64,1,1).data,fs=Math.max(.1,1-fc/25);cx.fillStyle=`rgba(${px[0]*fs},${px[1]*fs},${px[2]*fs},.8)`;cx.fillRect(i,y,1,1)}
+}
+drawSprites();drawEnemies();
+}
+
+function drawSprites(){for(const o of objs){if(!o.collected)drawSpr(o.x+.5,o.y+.5,o.type)}}
+function drawEnemies(){for(const e of enemies){if(e.alive)drawSpr(e.x,e.y,'e_'+e.type)}}
+
+function drawSpr(wx,wy,type){
+const dx=wx-p.x,dy=wy-p.y,dd=Math.sqrt(dx*dx+dy*dy);
+if(dd>10)return;
+let a=Math.atan2(dy,dx)-p.dir;while(a>Math.PI)a-=Math.PI*2;while(a<-Math.PI)a+=Math.PI*2;
+if(Math.abs(a)>p.fov/2+.2)return;
+const sx=W/2+(a/(p.fov/2))*(W/2),sh=H/dd,sw=sh,top=(H-sh)/2,shd=Math.max(.3,1-dd/10);
+let col,sym;
+switch(type){
+case'altar':col=`rgba(180,160,80,${shd})`;sym='🪨';break;
+case'chest':col=`rgba(160,120,60,${shd})`;sym='📦';break;
+case'npc_old':col=`rgba(100,180,100,${shd})`;sym='🧙';break;
+case'npc_elf':col=`rgba(120,200,140,${shd})`;sym='🧝';break;
+case'tower':col=`rgba(60,60,60,${shd})`;sym='🏰';break;
+case'e_boar':col=`rgba(140,80,60,${shd})`;sym='🐗';break;
+case'e_wolf':col=`rgba(100,100,100,${shd})`;sym='🐺';break;
+default:col=`rgba(100,100,100,${shd})`;sym='?'
+}
+cx.font=`${Math.max(12,sh*.6)}px serif`;cx.textAlign='center';cx.textBaseline='middle';cx.fillStyle=col;cx.fillText(sym,sx,top+sh/2);
+if(dd<4){cx.font='11px sans-serif';cx.fillStyle=`rgba(200,220,200,${shd})`;let lb='';switch(type){case'altar':lb='Вівтар';break;case'chest':lb='Скриня';break;case'npc_old':lb='Марена';break;case'npc_elf':lb='Ельф';break;case'tower':lb='Вежа';break;case'e_boar':lb='Кабан';break;case'e_wolf':lb='Вовк'}cx.fillText(lb,sx,top-10)}
+}
+
+function updateEnemies(){
+for(const e of enemies){
+if(!e.alive)continue;
+const dd=d(p.x,p.y,e.x,e.y);
+if(dd<e.aggro){
+const dx=p.x-e.x,dy=p.y-e.y,len=Math.sqrt(dx*dx+dy*dy),mx=(dx/len)*e.spd,my=(dy/len)*e.spd;
+const nx=e.x+mx,ny=e.y+my;
+if(!iw(nx,ny)){e.x=nx;e.y=ny}else if(!iw(nx,e.y))e.x=nx;else if(!iw(e.x,ny))e.y=ny
+}
+if(dd<.8){g.hp-=1;uh();if(g.hp<=0){g.hp=0;g.over=true;sm('💀 Тебе перемогли...','Ліс утратив Хранительку.',1e4)}else sm('💥 -1 HP!','Залишилось '+g.hp+' HP',1e3)}
+}
+}
+
+function drawMinimap(){
+const mw=mc.width,mh=mc.height,ts=mw/MS;
+mxc.fillStyle='#0a1a0a';mxc.fillRect(0,0,mw,mh);
+for(let y=0;y<MS;y++)for(let x=0;x<MS;x++){const t=MP[y][x];if(t!==0){switch(t){case 1:mxc.fillStyle='#2a4a2a';break;case 2:mxc.fillStyle='#4a4a4a';break;case 3:mxc.fillStyle='#1a3a1a';break;case 5:mxc.fillStyle='#6a5a3a';break;case 6:mxc.fillStyle='#3a3a3a'}mxc.fillRect(x*ts,y*ts,ts,ts)}}
+for(const o of objs){if(!o.collected){mxc.fillStyle='#f0d080';mxc.beginPath();mxc.arc((o.x+.5)*ts,(o.y+.5)*ts,2,0,Math.PI*2);mxc.fill()}}
+for(const e of enemies){if(!e.alive)continue;mxc.fillStyle='#d06060';mxc.beginPath();mxc.arc(e.x*ts,e.y*ts,2,0,Math.PI*2);mxc.fill()}
+mxc.fillStyle='#8fbc6b';mxc.beginPath();mxc.arc(p.x*ts,p.y*ts,3,0,Math.PI*2);mxc.fill();
+mxc.strokeStyle='#8fbc6b';mxc.lineWidth=1;mxc.beginPath();mxc.moveTo(p.x*ts,p.y*ts);mxc.lineTo((p.x+Math.cos(p.dir)*2)*ts,(p.y+Math.sin(p.dir)*2)*ts);mxc.stroke();
+}
+
+function update(){
+if(g.over)return;
+let mx=0,my=0;
+if(keys['w']||keys['W']){mx+=Math.cos(p.dir);my+=Math.sin(p.dir)}
+if(keys['s']||keys['S']){mx-=Math.cos(p.dir);my-=Math.sin(p.dir)}
+if(keys['a']||keys['A']){mx+=Math.cos(p.dir-Math.PI/2);my+=Math.sin(p.dir-Math.PI/2)}
+if(keys['d']||keys['D']){mx+=Math.cos(p.dir+Math.PI/2);my+=Math.sin(p.dir+Math.PI/2)}
+if(mx!==0||my!==0){const l=Math.sqrt(mx*mx+my*my);mx=(mx/l)*p.spd;my=(my/l)*p.spd;const nx=p.x+mx,ny=p.y+my;if(!iw(nx,ny)){p.x=nx;p.y=ny}else if(!iw(nx,p.y))p.x=nx;else if(!iw(p.x,ny))p.y=ny}
+if(locked){p.dir+=(mx-W/2)*.002;mx=W/2;my=H/2}
+updateEnemies();
+if(msgTm>0){msgTm-=16;if(msgTm<=0)hm()}
+}
+
+function loop(){update();render();drawMinimap();requestAnimationFrame(loop)}
+
+document.addEventListener('keydown',e=>{keys[e.key]=true;if(e.key==='e'||e.key==='E')interact();if((e.key==='r'||e.key==='R')&&g.over)restart()});
+document.addEventListener('keyup',e=>{keys[e.key]=false});
+c.addEventListener('click',()=>c.requestPointerLock());
+document.addEventListener('pointerlockchange',()=>{locked=document.pointerLockElement===c;document.body.style.cursor=locked?'none':'crosshair'});
+document.addEventListener('mousemove',e=>{if(locked){mx+=e.movementX;my+=e.movementY}else{mx=e.clientX;my=e.clientY}});
+
+function restart(){
+g.hp=10;g.maxHp=10;g.atk=2;g.xp=0;g.inv=[];g.flags={};g.qs='Знайти Серце Лісу';g.over=false;g.won=false;
+p.x=2.5;p.y=2.5;p.dir=0;
+for(const o of objs)o.collected=false;
+for(const e of enemies){e.alive=true;e.hp=e.maxHp}
+hm();uh()
+}
+
+uh();loop();
+</script>
+</body>
+</html>
